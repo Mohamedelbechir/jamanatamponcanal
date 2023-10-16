@@ -44,6 +44,7 @@ class _CustomerPageState extends State<CustomerPage> {
       backgroundColor: Colors.white,
       body: Center(
         child: BlocBuilder<CustomerCubit, CustomerState>(
+          buildWhen: (prev, next) => next is CustomerLoaded,
           builder: (context, state) {
             if (state is CustomerLoaded) {
               return ListView.builder(

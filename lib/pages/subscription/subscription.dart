@@ -50,6 +50,7 @@ class _AbonnementPageState extends State<AbonnementPage> {
     return Scaffold(
       body: Center(
         child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
+          buildWhen: (prev, next) => next is SubscriptionLoaded,
           builder: (context, state) {
             if (state is SubscriptionLoaded) {
               return Padding(
@@ -57,7 +58,6 @@ class _AbonnementPageState extends State<AbonnementPage> {
                 child: ListView.builder(
                     physics: const BouncingScrollPhysics(),
                     itemCount: state.subscriptions.length,
-                    shrinkWrap: true,
                     itemBuilder: (context, index) {
                       return SubscriptionTile(
                         subscription: state.subscriptions.elementAt(index),

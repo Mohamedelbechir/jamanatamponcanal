@@ -35,9 +35,19 @@ class CustomerTile extends StatelessWidget {
               CustomerNumberWidget(numberCustomer: customer.custumerNumber),
             ],
           ),
-          BoldTag(
-            color: Colors.blue,
-            text: "${customer.numberOfActiveSubscription} abonnement actif",
+          Wrap(
+            children: [
+              BoldTag(
+                color: Colors.blue,
+                text:
+                    "${customer.numberOfActiveSubscription} abonnement actif (s)",
+              ),
+              const SizedBox(width: 5),
+              BoldTag(
+                color: Colors.blue,
+                text: "${customer.numberOfDecoder} décodeur (s)",
+              ),
+            ],
           ),
         ],
       ),

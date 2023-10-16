@@ -9,7 +9,7 @@ sealed class BouquetState extends Equatable {
 final class BouquetInitial extends BouquetState {}
 
 final class BouquetLoaded extends BouquetState {
-  final List<Bouquet> bouquets;
+  final List<BouquetDetail> bouquets;
 
   BouquetLoaded({required this.bouquets});
 

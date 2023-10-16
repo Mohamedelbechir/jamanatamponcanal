@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:jamanacanal/models/database.dart';
+import 'package:jamanacanal/models/bouquet_detail.dart';
 import 'package:jamanacanal/widgets/bold_tag.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -12,7 +12,7 @@ class BouquetTile extends StatelessWidget {
     timeago.setLocaleMessages('fr_short', timeago.FrShortMessages());
   }
 
-  final Bouquet bouquet;
+  final BouquetDetail bouquet;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +41,8 @@ class BouquetTile extends StatelessWidget {
               SizedBox(width: 10),
               BoldTag(
                 color: Colors.blue,
-                text: "1 abonnement actif",
+                text:
+                    "${bouquet.nombreOfActiveSubcription} abonnement actif (s)",
               ),
             ],
           ),
