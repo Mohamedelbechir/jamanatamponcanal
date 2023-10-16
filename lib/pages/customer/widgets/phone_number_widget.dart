@@ -15,7 +15,10 @@ class PhoneNumberWidget extends StatelessWidget {
       onTap: () => launchUrl(Uri.parse('tel:$phoneNumber')),
       child: Row(
         children: [
-          const Icon(Icons.phone),
+          Icon(
+            Icons.phone,
+            color: Colors.blue[900],
+          ),
           Padding(
             padding: const EdgeInsets.only(left: 8),
             child: Text(
@@ -23,6 +26,7 @@ class PhoneNumberWidget extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.blue[900],
+                letterSpacing: 1,
               ),
             ),
           ),

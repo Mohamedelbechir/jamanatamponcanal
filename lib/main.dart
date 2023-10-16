@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
+import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/daos/bouquet_dao.dart';
 import 'package:jamanacanal/daos/customer_dao.dart';
@@ -55,7 +56,11 @@ class Application extends StatelessWidget {
       home: MultiBlocProvider(
         providers: [
           BlocProvider(
+            create: (context) => NotificationCubit(),
+          ),
+          BlocProvider(
             create: (context) => SubscriptionCubit(
+              context.read(),
               context.read(),
               context.read(),
               context.read(),

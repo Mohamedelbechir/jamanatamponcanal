@@ -25,13 +25,13 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
   Future<List<SubscriptionDetail>> allSubscriptionDetails() {
     return customSelect(
       """
-      SELECT id, 
-            start_date, 
-            end_date, 
-            paid, 
-            bouquet_name,
+      SELECT s.id, 
+            s.start_date, 
+            s.end_date, 
+            s.paid, 
+            b.name as bouquet_name,
             d.number AS decoder_number,
-            CONCAT(c.first_name, ' ', c.last_name) 
+            c.first_name || ' ' || c.last_name AS customer_full_name
                    
       FROM subscriptions s
       INNER JOIN bouquets b ON b.id = s.bouquet_id
@@ -48,8 +48,8 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
         bouquetName: row.read<String>("bouquet_name"),
         customerFullName: row.read<String>('customer_full_name'),
         decoderNumber: row.read<String>("decoder_number"),
-        startDate: row.read("start_date"),
-        endDate: row.read("date_end"),
+        startDate: row.read<DateTime>("start_date"),
+        endDate: row.read<DateTime>("end_date"),
       );
     }).get();
   }

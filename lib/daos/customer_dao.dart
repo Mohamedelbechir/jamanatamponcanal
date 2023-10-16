@@ -32,7 +32,6 @@ class CustomersDao extends DatabaseAccessor<AppDatabase>
 
       """,
       // used for the stream: the stream will update when either table changes
-      readsFrom: {customers, subscriptions, decoders},
     ).map((QueryRow row) {
       return CustomerDetail(
         id: row.read<int>('id'),

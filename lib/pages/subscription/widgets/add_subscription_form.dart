@@ -8,8 +8,8 @@ import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/form_action_buttons.dart';
 import 'package:jamanacanal/widgets/model_top.dart';
-import 'package:lite_rolling_switch/lite_rolling_switch.dart';
 import '../../../models/subscription_input_data.dart';
+import '../../../widgets/notification_widget.dart';
 
 class AddSubscriptionForm extends StatefulWidget {
   const AddSubscriptionForm({Key? key}) : super(key: key);
@@ -33,13 +33,16 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
   bool isSubmitting = false;
   StreamSubscription<SubscriptionState>? subscription;
 
-  bool _isPaid = true;
+  bool _isPaid = false;
   @override
   void initState() {
     super.initState();
+
     _setDateDisplay(_startSelectedDate, _startDateTextEditingController);
     _setDateDisplay(_endSelectedDate, _endDateTextEditingController);
+
     _refreshFormValidationState();
+
     subscription =
         context.read<SubscriptionCubit>().stream.listen(listenBouquetCubit);
   }
@@ -103,6 +106,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
+                    buildWhen: (prev, next) => next is SubscriptionFormLoaded,
                     builder: (context, state) {
                       if (state is SubscriptionFormLoaded) {
                         return Column(
@@ -172,10 +176,11 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                             const Text("Choisir la date fin de l'abonnement"),
                             const SizedBox(height: 10),
                             TextField(
+                              controller: _endDateTextEditingController,
                               focusNode: AlwaysDisabledFocusNode(),
                               decoration: AppInputDecoration(
-                                  iconData: Icons.calendar_month),
-                              controller: _endDateTextEditingController,
+                                iconData: Icons.calendar_month,
+                              ),
                               onTap: () {
                                 _selectDate(onSelect: (value) {
                                   _endSelectedDate = value;
@@ -188,25 +193,28 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                               },
                             ),
                             const SizedBox(height: 10),
-                            LiteRollingSwitch(
-                              value: _isPaid,
-                              width: 150,
-                              textOn: 'Payer',
-                              textOff: 'Non payer',
-                              colorOn: Colors.black,
-                              colorOff: Colors.blueGrey,
-                              iconOn: Icons.lightbulb_outline,
-                              iconOff: Icons.power_settings_new,
-                              animationDuration:
-                                  const Duration(milliseconds: 300),
-                              onChanged: (bool isPaid) {
-                                _isPaid = isPaid;
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _isPaid = !_isPaid;
+                                });
                               },
-                              onDoubleTap: () {},
-                              onSwipe: () {},
-                              onTap: () {},
+                              child: Row(
+                                children: [
+                                  Switch(
+                                    value: _isPaid,
+                                    onChanged: (bool isPaid) {
+                                      setState(() {
+                                        _isPaid = isPaid;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Text("Payer"),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 10),
+                            const NotificationWidget(),
                             FormActionButtons(
                               isSubmitting: isSubmitting,
                               onSave: handleSave,

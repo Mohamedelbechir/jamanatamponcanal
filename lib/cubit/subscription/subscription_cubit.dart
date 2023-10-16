@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/daos/bouquet_dao.dart';
 import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/daos/decoder_dao.dart';
@@ -17,11 +18,13 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   final DecodersDao _decodersDao;
   final BouquetsDao _bouquetsDao;
   final CustomersDao _customersDao;
+  final NotificationCubit _notificationCubit;
   SubscriptionCubit(
     this._subscriptionsDao,
     this._decodersDao,
     this._bouquetsDao,
     this._customersDao,
+    this._notificationCubit,
   ) : super(SubscriptionInitial());
 
   Future<void> loadSubscriptions() async {
@@ -47,20 +50,32 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   Future<void> addSubscription(
     SubscriptionInputData subscriptionInputData,
   ) async {
-    emit(AddingSubscription());
+    try {
+      emit(AddingSubscription());
 
-    await _subscriptionsDao.addSubscription(SubscriptionsCompanion(
-      bouquetId: Value(subscriptionInputData.bouquetId),
-      decoderId: Value(subscriptionInputData.decoderId),
-      startDate: Value(subscriptionInputData.startDate),
-      endDate: Value(subscriptionInputData.endDate),
-      paid: Value(subscriptionInputData.paid),
-    ));
+      await _subscriptionsDao.addSubscription(SubscriptionsCompanion(
+        bouquetId: Value(subscriptionInputData.bouquetId),
+        decoderId: Value(subscriptionInputData.decoderId),
+        startDate: Value(subscriptionInputData.startDate),
+        endDate: Value(subscriptionInputData.endDate),
+        paid: Value(subscriptionInputData.paid),
+      ));
 
-    await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    emit(SubscriptionAdded());
+      emit(SubscriptionAdded());
 
-    loadSubscriptions();
+      _notificationCubit.push(
+        NotificationType.success,
+        "Abonnement ajouté avec succès !",
+      );
+
+      loadSubscriptions();
+    } catch (e) {
+      _notificationCubit.push(
+        NotificationType.error,
+        "Error lors de l'ajout de l'abonnement !",
+      );
+    }
   }
 }

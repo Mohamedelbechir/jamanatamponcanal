@@ -813,15 +813,6 @@ class $SubscriptionsTable extends Subscriptions
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _paidMeta = const VerificationMeta('paid');
-  @override
-  late final GeneratedColumn<bool> paid = GeneratedColumn<bool>(
-      'paid', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('CHECK ("paid" IN (0, 1))'),
-      defaultValue: const Constant(false));
   static const VerificationMeta _startDateMeta =
       const VerificationMeta('startDate');
   @override
@@ -834,15 +825,15 @@ class $SubscriptionsTable extends Subscriptions
   late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
       'end_date', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
-  static const VerificationMeta _decoderIdMeta =
-      const VerificationMeta('decoderId');
+  static const VerificationMeta _paidMeta = const VerificationMeta('paid');
   @override
-  late final GeneratedColumn<int> decoderId = GeneratedColumn<int>(
-      'decoder_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
+  late final GeneratedColumn<bool> paid = GeneratedColumn<bool>(
+      'paid', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
       defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES decoders (id)'));
+          GeneratedColumn.constraintIsAlways('CHECK ("paid" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _bouquetIdMeta =
       const VerificationMeta('bouquetId');
   @override
@@ -852,9 +843,18 @@ class $SubscriptionsTable extends Subscriptions
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES bouquets (id)'));
+  static const VerificationMeta _decoderIdMeta =
+      const VerificationMeta('decoderId');
+  @override
+  late final GeneratedColumn<int> decoderId = GeneratedColumn<int>(
+      'decoder_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES decoders (id)'));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, paid, startDate, endDate, decoderId, bouquetId];
+      [id, startDate, endDate, paid, bouquetId, decoderId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -868,10 +868,6 @@ class $SubscriptionsTable extends Subscriptions
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('paid')) {
-      context.handle(
-          _paidMeta, paid.isAcceptableOrUnknown(data['paid']!, _paidMeta));
-    }
     if (data.containsKey('start_date')) {
       context.handle(_startDateMeta,
           startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
@@ -884,17 +880,21 @@ class $SubscriptionsTable extends Subscriptions
     } else if (isInserting) {
       context.missing(_endDateMeta);
     }
-    if (data.containsKey('decoder_id')) {
-      context.handle(_decoderIdMeta,
-          decoderId.isAcceptableOrUnknown(data['decoder_id']!, _decoderIdMeta));
-    } else if (isInserting) {
-      context.missing(_decoderIdMeta);
+    if (data.containsKey('paid')) {
+      context.handle(
+          _paidMeta, paid.isAcceptableOrUnknown(data['paid']!, _paidMeta));
     }
     if (data.containsKey('bouquet_id')) {
       context.handle(_bouquetIdMeta,
           bouquetId.isAcceptableOrUnknown(data['bouquet_id']!, _bouquetIdMeta));
     } else if (isInserting) {
       context.missing(_bouquetIdMeta);
+    }
+    if (data.containsKey('decoder_id')) {
+      context.handle(_decoderIdMeta,
+          decoderId.isAcceptableOrUnknown(data['decoder_id']!, _decoderIdMeta));
+    } else if (isInserting) {
+      context.missing(_decoderIdMeta);
     }
     return context;
   }
@@ -907,16 +907,16 @@ class $SubscriptionsTable extends Subscriptions
     return Subscription(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      paid: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}paid'])!,
       startDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date'])!,
       endDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}end_date'])!,
-      decoderId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}decoder_id'])!,
+      paid: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}paid'])!,
       bouquetId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}bouquet_id'])!,
+      decoderId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}decoder_id'])!,
     );
   }
 
@@ -928,38 +928,38 @@ class $SubscriptionsTable extends Subscriptions
 
 class Subscription extends DataClass implements Insertable<Subscription> {
   final int id;
-  final bool paid;
   final DateTime startDate;
   final DateTime endDate;
-  final int decoderId;
+  final bool paid;
   final int bouquetId;
+  final int decoderId;
   const Subscription(
       {required this.id,
-      required this.paid,
       required this.startDate,
       required this.endDate,
-      required this.decoderId,
-      required this.bouquetId});
+      required this.paid,
+      required this.bouquetId,
+      required this.decoderId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['paid'] = Variable<bool>(paid);
     map['start_date'] = Variable<DateTime>(startDate);
     map['end_date'] = Variable<DateTime>(endDate);
-    map['decoder_id'] = Variable<int>(decoderId);
+    map['paid'] = Variable<bool>(paid);
     map['bouquet_id'] = Variable<int>(bouquetId);
+    map['decoder_id'] = Variable<int>(decoderId);
     return map;
   }
 
   SubscriptionsCompanion toCompanion(bool nullToAbsent) {
     return SubscriptionsCompanion(
       id: Value(id),
-      paid: Value(paid),
       startDate: Value(startDate),
       endDate: Value(endDate),
-      decoderId: Value(decoderId),
+      paid: Value(paid),
       bouquetId: Value(bouquetId),
+      decoderId: Value(decoderId),
     );
   }
 
@@ -968,11 +968,11 @@ class Subscription extends DataClass implements Insertable<Subscription> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Subscription(
       id: serializer.fromJson<int>(json['id']),
-      paid: serializer.fromJson<bool>(json['paid']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       endDate: serializer.fromJson<DateTime>(json['endDate']),
-      decoderId: serializer.fromJson<int>(json['decoderId']),
+      paid: serializer.fromJson<bool>(json['paid']),
       bouquetId: serializer.fromJson<int>(json['bouquetId']),
+      decoderId: serializer.fromJson<int>(json['decoderId']),
     );
   }
   @override
@@ -980,115 +980,115 @@ class Subscription extends DataClass implements Insertable<Subscription> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'paid': serializer.toJson<bool>(paid),
       'startDate': serializer.toJson<DateTime>(startDate),
       'endDate': serializer.toJson<DateTime>(endDate),
-      'decoderId': serializer.toJson<int>(decoderId),
+      'paid': serializer.toJson<bool>(paid),
       'bouquetId': serializer.toJson<int>(bouquetId),
+      'decoderId': serializer.toJson<int>(decoderId),
     };
   }
 
   Subscription copyWith(
           {int? id,
-          bool? paid,
           DateTime? startDate,
           DateTime? endDate,
-          int? decoderId,
-          int? bouquetId}) =>
+          bool? paid,
+          int? bouquetId,
+          int? decoderId}) =>
       Subscription(
         id: id ?? this.id,
-        paid: paid ?? this.paid,
         startDate: startDate ?? this.startDate,
         endDate: endDate ?? this.endDate,
-        decoderId: decoderId ?? this.decoderId,
+        paid: paid ?? this.paid,
         bouquetId: bouquetId ?? this.bouquetId,
+        decoderId: decoderId ?? this.decoderId,
       );
   @override
   String toString() {
     return (StringBuffer('Subscription(')
           ..write('id: $id, ')
-          ..write('paid: $paid, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
-          ..write('decoderId: $decoderId, ')
-          ..write('bouquetId: $bouquetId')
+          ..write('paid: $paid, ')
+          ..write('bouquetId: $bouquetId, ')
+          ..write('decoderId: $decoderId')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, paid, startDate, endDate, decoderId, bouquetId);
+      Object.hash(id, startDate, endDate, paid, bouquetId, decoderId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Subscription &&
           other.id == this.id &&
-          other.paid == this.paid &&
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
-          other.decoderId == this.decoderId &&
-          other.bouquetId == this.bouquetId);
+          other.paid == this.paid &&
+          other.bouquetId == this.bouquetId &&
+          other.decoderId == this.decoderId);
 }
 
 class SubscriptionsCompanion extends UpdateCompanion<Subscription> {
   final Value<int> id;
-  final Value<bool> paid;
   final Value<DateTime> startDate;
   final Value<DateTime> endDate;
-  final Value<int> decoderId;
+  final Value<bool> paid;
   final Value<int> bouquetId;
+  final Value<int> decoderId;
   const SubscriptionsCompanion({
     this.id = const Value.absent(),
-    this.paid = const Value.absent(),
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
-    this.decoderId = const Value.absent(),
+    this.paid = const Value.absent(),
     this.bouquetId = const Value.absent(),
+    this.decoderId = const Value.absent(),
   });
   SubscriptionsCompanion.insert({
     this.id = const Value.absent(),
-    this.paid = const Value.absent(),
     required DateTime startDate,
     required DateTime endDate,
-    required int decoderId,
+    this.paid = const Value.absent(),
     required int bouquetId,
+    required int decoderId,
   })  : startDate = Value(startDate),
         endDate = Value(endDate),
-        decoderId = Value(decoderId),
-        bouquetId = Value(bouquetId);
+        bouquetId = Value(bouquetId),
+        decoderId = Value(decoderId);
   static Insertable<Subscription> custom({
     Expression<int>? id,
-    Expression<bool>? paid,
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
-    Expression<int>? decoderId,
+    Expression<bool>? paid,
     Expression<int>? bouquetId,
+    Expression<int>? decoderId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (paid != null) 'paid': paid,
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
-      if (decoderId != null) 'decoder_id': decoderId,
+      if (paid != null) 'paid': paid,
       if (bouquetId != null) 'bouquet_id': bouquetId,
+      if (decoderId != null) 'decoder_id': decoderId,
     });
   }
 
   SubscriptionsCompanion copyWith(
       {Value<int>? id,
-      Value<bool>? paid,
       Value<DateTime>? startDate,
       Value<DateTime>? endDate,
-      Value<int>? decoderId,
-      Value<int>? bouquetId}) {
+      Value<bool>? paid,
+      Value<int>? bouquetId,
+      Value<int>? decoderId}) {
     return SubscriptionsCompanion(
       id: id ?? this.id,
-      paid: paid ?? this.paid,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
-      decoderId: decoderId ?? this.decoderId,
+      paid: paid ?? this.paid,
       bouquetId: bouquetId ?? this.bouquetId,
+      decoderId: decoderId ?? this.decoderId,
     );
   }
 
@@ -1098,20 +1098,20 @@ class SubscriptionsCompanion extends UpdateCompanion<Subscription> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (paid.present) {
-      map['paid'] = Variable<bool>(paid.value);
-    }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
     }
     if (endDate.present) {
       map['end_date'] = Variable<DateTime>(endDate.value);
     }
-    if (decoderId.present) {
-      map['decoder_id'] = Variable<int>(decoderId.value);
+    if (paid.present) {
+      map['paid'] = Variable<bool>(paid.value);
     }
     if (bouquetId.present) {
       map['bouquet_id'] = Variable<int>(bouquetId.value);
+    }
+    if (decoderId.present) {
+      map['decoder_id'] = Variable<int>(decoderId.value);
     }
     return map;
   }
@@ -1120,11 +1120,11 @@ class SubscriptionsCompanion extends UpdateCompanion<Subscription> {
   String toString() {
     return (StringBuffer('SubscriptionsCompanion(')
           ..write('id: $id, ')
-          ..write('paid: $paid, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
-          ..write('decoderId: $decoderId, ')
-          ..write('bouquetId: $bouquetId')
+          ..write('paid: $paid, ')
+          ..write('bouquetId: $bouquetId, ')
+          ..write('decoderId: $decoderId')
           ..write(')'))
         .toString();
   }

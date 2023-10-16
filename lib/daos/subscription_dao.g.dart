@@ -4,8 +4,8 @@ part of 'subscription_dao.dart';
 
 // ignore_for_file: type=lint
 mixin _$SubscriptionsDaoMixin on DatabaseAccessor<AppDatabase> {
+  $BouquetsTable get bouquets => attachedDatabase.bouquets;
   $CustomersTable get customers => attachedDatabase.customers;
   $DecodersTable get decoders => attachedDatabase.decoders;
-  $BouquetsTable get bouquets => attachedDatabase.bouquets;
   $SubscriptionsTable get subscriptions => attachedDatabase.subscriptions;
 }

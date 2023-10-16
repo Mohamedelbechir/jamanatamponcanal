@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'widgets/add_bouquet_form.dart';
-import 'package:timeago/timeago.dart' as timeago;
-import 'package:jamanacanal/widgets/tag.dart';
+
+import 'widgets/bouquet_tile.dart';
 
 class BouquetPage extends StatefulWidget {
   const BouquetPage({super.key});
@@ -18,9 +18,6 @@ class _BouquetPageState extends State<BouquetPage> {
   void initState() {
     super.initState();
     context.read<BouquetCubit>().load();
-
-    timeago.setLocaleMessages('fr', timeago.FrMessages());
-    timeago.setLocaleMessages('fr_short', timeago.FrShortMessages());
   }
 
   showAddBouquetFormDialog() {
@@ -41,10 +38,10 @@ class _BouquetPageState extends State<BouquetPage> {
     );
   }
 
-  final locale = 'fr';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
         child: BlocBuilder<BouquetCubit, BouquetState>(
           buildWhen: (prev, next) => next is BouquetLoaded,
@@ -59,40 +56,17 @@ class _BouquetPageState extends State<BouquetPage> {
                   ),
                 );
               }
-              return ListView.separated(
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (_, index) {
-                  final bouquet = state.bouquets.elementAt(index);
-                  return ListTile(
-                    title: Text(
-                      bouquet.name,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            buildTag("ajouté ${timeago.format(
-                              bouquet.createAt!,
-                              locale: locale,
-                            )}")
-                          ],
-                        ),
-                        if (bouquet.updateAt != null)
-                          buildTag(timeago.format(
-                            bouquet.updateAt!,
-                            locale: locale,
-                          ))
-                      ],
-                    ),
-                  );
-                },
-                separatorBuilder: (_, index) => const Divider(),
-                itemCount: state.bouquets.length,
+              return Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: (_, index) {
+                    return BouquetTile(
+                      bouquet: state.bouquets.elementAt(index),
+                    );
+                  },
+                  itemCount: state.bouquets.length,
+                ),
               );
             }
             return const CircularProgressIndicator();

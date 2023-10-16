@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jamanacanal/pages/subscription/subscription.dart';
 import 'package:jamanacanal/pages/about/about.dart';
-import 'package:jamanacanal/pages/bouquet/bouquet.dart';
+import 'package:jamanacanal/pages/bouquet/bouquet_page.dart';
 import 'package:jamanacanal/pages/customer/customer.dart';
 
 import '../widgets/app_title.dart';
