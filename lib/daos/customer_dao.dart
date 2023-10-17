@@ -52,4 +52,13 @@ class CustomersDao extends DatabaseAccessor<AppDatabase>
       );
     }).get();
   }
+
+  Future<Customer> findById(int customerId) {
+    return (select(customers)..where((t) => t.id.equals(customerId)))
+        .getSingle();
+  }
+
+  Future<bool> updateCustomer(Customer customer) {
+    return update(customers).replace(customer);
+  }
 }

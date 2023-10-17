@@ -53,4 +53,10 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
       );
     }).get();
   }
+
+  Future<Subscription?> findByDecoder(int decoderId) {
+    return (select(subscriptions)
+          ..where((tbl) => tbl.decoderId.equals(decoderId)))
+        .getSingleOrNull();
+  }
 }

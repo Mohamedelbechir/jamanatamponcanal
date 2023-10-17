@@ -18,7 +18,7 @@ class AppTitle extends StatelessWidget {
           ),
         ),
         Text(
-          "Jamana Tampon",
+          "Jamanatampon",
           style: TextStyle(
             color: Colors.blue[900],
             fontWeight: FontWeight.bold,

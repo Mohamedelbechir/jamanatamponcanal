@@ -71,6 +71,7 @@ class Application extends StatelessWidget {
             create: (context) => CustomerCubit(
               context.read(),
               context.read(),
+              context.read(),
             ),
           ),
           BlocProvider(

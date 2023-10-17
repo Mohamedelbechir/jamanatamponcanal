@@ -43,6 +43,7 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
       body: _pages.elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
         unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

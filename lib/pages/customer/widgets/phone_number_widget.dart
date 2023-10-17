@@ -14,6 +14,7 @@ class PhoneNumberWidget extends StatelessWidget {
     return InkWell(
       onTap: () => launchUrl(Uri.parse('tel:$phoneNumber')),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.phone,

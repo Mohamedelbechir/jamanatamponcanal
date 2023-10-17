@@ -7,7 +7,7 @@ import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/form_action_buttons.dart';
-import 'package:jamanacanal/widgets/model_top.dart';
+import 'package:jamanacanal/widgets/modal_title.dart';
 import '../../../models/subscription_input_data.dart';
 import '../../../widgets/notification_widget.dart';
 
@@ -97,14 +97,15 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
       initialChildSize: .75,
       minChildSize: 0.1,
       builder: (context, controller) {
-        return Column(
-          children: [
-            modalTop,
-            Expanded(
-              child: SingleChildScrollView(
-                controller: controller,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const ModalTitle(text: "Ajouter abonnement"),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: controller,
                   child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
                     buildWhen: (prev, next) => next is SubscriptionFormLoaded,
                     builder: (context, state) {
@@ -228,8 +229,8 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -249,14 +250,10 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
 
   bool _isFormValid = false;
 
-  Function? handleSave() {
-    return isSubmitting || !_isFormValid
-        ? null
-        : () {
-            if (_isFormValid) {
-              _submitFormData();
-            }
-          };
+  handleSave() {
+    if (_isFormValid) {
+      _submitFormData();
+    }
   }
 
   void _submitFormData() {

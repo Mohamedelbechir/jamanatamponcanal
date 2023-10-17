@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
-import 'package:jamanacanal/widgets/model_top.dart';
 
 import '../../../widgets/form_action_buttons.dart';
+import '../../../widgets/modal_title.dart';
 
 class AddBouquetForm extends StatefulWidget {
   const AddBouquetForm({super.key});
@@ -20,13 +20,32 @@ class _AddBouquetFormState extends State<AddBouquetForm> {
 
   String bouquetName = "";
   bool isSubmitting = false;
+  bool isFormValid = false;
   StreamSubscription<BouquetState>? subscription;
+  final _bouquetTextController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     subscription =
         context.read<BouquetCubit>().stream.listen(listenBouquetCubit);
+
+    _bouquetTextController.addListener(_listenBouquetTextChange);
+  }
+
+  void _listenBouquetTextChange() {
+    final currentText = _bouquetTextController.text.trim();
+
+    if (currentText.isNotEmpty && !isFormValid) {
+      setState(() {
+        isFormValid = true;
+      });
+    }
+    if (currentText.isEmpty && isFormValid) {
+      setState(() {
+        isFormValid = false;
+      });
+    }
   }
 
   @override
@@ -58,10 +77,12 @@ class _AddBouquetFormState extends State<AddBouquetForm> {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            modalTop,
-            const SizedBox(height: 20),
+            const ModalTitle(text: "Ajouter bouquet"),
+            const Text("Nom bouquet"),
             TextFormField(
+              controller: _bouquetTextController,
               onSaved: (value) => bouquetName = value!,
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -69,12 +90,13 @@ class _AddBouquetFormState extends State<AddBouquetForm> {
                 }
                 return null;
               },
-              decoration: AppInputDecoration(
-                hintText: "Saisir le nom du bouquet",
-              ),
+              decoration: AppInputDecoration(),
             ),
             const SizedBox(height: 20),
-            FormActionButtons(isSubmitting: isSubmitting, onSave: handleSave),
+            FormActionButtons(
+              isSubmitting: isSubmitting,
+              onSave: handleSave,
+            ),
             const SizedBox(height: 10),
           ],
         ),
@@ -82,14 +104,10 @@ class _AddBouquetFormState extends State<AddBouquetForm> {
     );
   }
 
-  Function? handleSave() {
-    return isSubmitting
-        ? null
-        : () {
-            if (_formKey.currentState!.validate()) {
-              _formKey.currentState!.save();
-              context.read<BouquetCubit>().addBouquet(bouquetName);
-            }
-          };
+  handleSave() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      context.read<BouquetCubit>().addBouquet(bouquetName);
+    }
   }
 }

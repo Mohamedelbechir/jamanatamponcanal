@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class FormActionButtons extends StatelessWidget {
   final bool isSubmitting;
-  final Function onSave;
+  final VoidCallback onSave;
 
   const FormActionButtons({
     super.key,
@@ -28,7 +28,7 @@ class FormActionButtons extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
           ),
-          onPressed: onSave(),
+          onPressed: isSubmitting ? null : onSave,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.max,

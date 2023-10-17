@@ -14,4 +14,13 @@ class DecodersDao extends DatabaseAccessor<AppDatabase>
   Future<int> addDecoder(DecodersCompanion decoder) {
     return into(decoders).insert(decoder);
   }
+
+  Future<List<Decoder>> findByCustomer(int customerId) {
+    return (select(decoders)..where((tbl) => tbl.customerId.equals(customerId)))
+        .get();
+  }
+
+  Future<int> deleteDecoder(Decoder decoderToDelete) {
+    return delete(decoders).delete(decoderToDelete);
+  }
 }

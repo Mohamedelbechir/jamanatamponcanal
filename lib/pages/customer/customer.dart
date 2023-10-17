@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
-import 'widgets/add_customer_form.dart';
+import 'widgets/form_customer.dart';
 
 import 'widgets/customer_tile.dart';
 
@@ -20,7 +20,9 @@ class _CustomerPageState extends State<CustomerPage> {
     context.read<CustomerCubit>().loadCustomerDetails();
   }
 
-  showAddCustomerFormDialog() {
+  showCustomerFormDialog() {
+    context.read<CustomerCubit>().loadForm();
+
     showModalBottomSheet(
       context: context,
       isDismissible: true,
@@ -29,13 +31,20 @@ class _CustomerPageState extends State<CustomerPage> {
       builder: (_) {
         return BlocProvider<CustomerCubit>.value(
           value: context.read(),
-          child: const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: AddCustomerForm(),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FormCustomer(
+              formTitle: "Ajouter abonné",
+              onSubmit: (customerInputData) {
+                context.read<CustomerCubit>().addCustomer(customerInputData);
+              },
+            ),
           ),
         );
       },
-    );
+    ).then((value) {
+      context.read<CustomerCubit>().loadCustomerDetails();
+    });
   }
 
   @override
@@ -44,9 +53,9 @@ class _CustomerPageState extends State<CustomerPage> {
       backgroundColor: Colors.white,
       body: Center(
         child: BlocBuilder<CustomerCubit, CustomerState>(
-          buildWhen: (prev, next) => next is CustomerLoaded,
+          buildWhen: (prev, next) => next is CustomersLoaded,
           builder: (context, state) {
-            if (state is CustomerLoaded) {
+            if (state is CustomersLoaded) {
               return ListView.builder(
                 physics: const BouncingScrollPhysics(),
                 itemCount: state.customers.length,
@@ -62,7 +71,7 @@ class _CustomerPageState extends State<CustomerPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showAddCustomerFormDialog,
+        onPressed: showCustomerFormDialog,
         backgroundColor: Colors.black,
         child: const Icon(
           Icons.add,
