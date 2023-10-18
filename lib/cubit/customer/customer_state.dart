@@ -10,9 +10,9 @@ sealed class CustomerState extends Equatable {
 
 final class CustomerInitial extends CustomerState {}
 
-final class AddingCustomer extends CustomerState {}
+final class CustomerFormUnderTraintement extends CustomerState {}
 
-final class CustomerAdded extends CustomerState {}
+final class CustomerFormTraitementEnded extends CustomerState {}
 
 final class CustomerFormLoaded extends CustomerState {
   final bool forAdding;

@@ -6,6 +6,7 @@ import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
 import 'package:jamanacanal/pages/customer/widgets/removable_tag.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/modal_title.dart';
+import 'package:jamanacanal/widgets/notification_widget.dart';
 import '../../../cubit/customer/customer_input_data.dart';
 import '../../../widgets/form_action_buttons.dart';
 import 'form_first_name.dart';
@@ -59,7 +60,7 @@ class _FormCustomerState extends State<FormCustomer> {
     setState(() {
       _updateSubmittingState(state);
 
-      if (state is CustomerAdded) {
+      if (state is CustomerFormTraitementEnded) {
         setState(() {
           _formKey.currentState!.reset();
         });
@@ -79,7 +80,7 @@ class _FormCustomerState extends State<FormCustomer> {
   }
 
   void _updateSubmittingState(state) {
-    if (state is AddingCustomer) {
+    if (state is CustomerFormUnderTraintement) {
       isSubmitting = true;
     } else {
       isSubmitting = false;
@@ -134,6 +135,7 @@ class _FormCustomerState extends State<FormCustomer> {
                                   const SizedBox(height: 10),
                                   _buildDecoder(state.customerInputData),
                                   const SizedBox(height: 10),
+                                  const NotificationWidget(),
                                   FormActionButtons(
                                     isSubmitting: isSubmitting,
                                     onSave: () {
@@ -163,12 +165,12 @@ class _FormCustomerState extends State<FormCustomer> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("Décodeurs (saisir un ou plusieurs décodeurs)"),
-        if (customerInputData.decoderNumbers.isNotEmpty)
+        if (customerInputData.decoderDetails.isNotEmpty)
           Column(
             children: [
               const SizedBox(height: 5),
               Wrap(
-                children: customerInputData.decoderNumbers.map((decoder) {
+                children: customerInputData.decoderDetails.map((decoder) {
                   return _buildRemovableTagForDecoder(
                     decoder,
                     customerInputData,
@@ -182,10 +184,10 @@ class _FormCustomerState extends State<FormCustomer> {
           controller: _currentDecoderNumberTextController,
           validator: (value) {
             var message = 'Merci de saisir le numéro du decodeur';
-            if (customerInputData.decoderNumbers.isEmpty) {
+            if (customerInputData.decoderDetails.isEmpty) {
               return message;
             }
-            if (customerInputData.decoderNumbers.isNotEmpty) {
+            if (customerInputData.decoderDetails.isNotEmpty) {
               return null;
             }
             return emptyNessValidation(value, message);
@@ -195,9 +197,11 @@ class _FormCustomerState extends State<FormCustomer> {
             suffixIcon: InkWell(
               onTap: () {
                 final newCustomerInputData = customerInputData.copyWith(
-                    decoderNumbers:
-                        Set<String>.from(customerInputData.decoderNumbers)
-                          ..add(_currentDecoderNumberTextController.text));
+                    decoderNumbers: Set<DecoderDetail>.from(
+                        customerInputData.decoderDetails)
+                      ..add(DecoderDetail(
+                        number: _currentDecoderNumberTextController.text,
+                      )));
                 context
                     .read<CustomerCubit>()
                     .setCurrentFormData(newCustomerInputData);
@@ -321,39 +325,14 @@ class _FormCustomerState extends State<FormCustomer> {
     );
   }
 
-  Column _buidLastName(CustomerInputData customerInputData) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Nom"),
-        TextFormField(
-          controller: _lastNameTextController,
-          onChanged: (val) {
-            context
-                .read<CustomerCubit>()
-                .setCurrentFormData(customerInputData.copyWith(
-                  lastName: _lastNameTextController.text,
-                ));
-          },
-          validator: (value) {
-            return emptyNessValidation(
-              value,
-              'Merci de saisir le nom du client',
-            );
-          },
-          decoration: AppInputDecoration(),
-        ),
-      ],
-    );
-  }
-
   RemovableTag _buildRemovableTagForDecoder(
-      String decoder, CustomerInputData customerInputData) {
+      DecoderDetail decoder, CustomerInputData customerInputData) {
     return RemovableTag(
-      text: decoder,
+      text: decoder.number,
+      readOnly: decoder.readOnly,
       onTapRemove: () {
         final newCustomerInputData = customerInputData.copyWith(
-            decoderNumbers: customerInputData.decoderNumbers
+            decoderNumbers: customerInputData.decoderDetails
                 .where((item) => item != decoder)
                 .toSet());
 
