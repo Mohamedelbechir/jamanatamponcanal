@@ -7,6 +7,8 @@ class Subscriptions extends Table {
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get endDate => dateTime()();
   BoolColumn get paid => boolean().withDefault(const Constant(false))();
-  IntColumn get bouquetId => integer().references(Bouquets, #id)();
-  IntColumn get decoderId => integer().references(Decoders, #id)();
+  IntColumn get bouquetId =>
+      integer().references(Bouquets, #id, onDelete: KeyAction.cascade)();
+  IntColumn get decoderId =>
+      integer().references(Decoders, #id, onDelete: KeyAction.cascade)();
 }
