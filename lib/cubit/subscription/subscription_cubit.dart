@@ -8,6 +8,7 @@ import 'package:jamanacanal/daos/decoder_dao.dart';
 import 'package:jamanacanal/daos/subscription_dao.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/subscription_detail.dart';
+import 'package:jamanacanal/notification/notification.dart';
 
 import '../../models/subscription_input_data.dart';
 
@@ -44,6 +45,32 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       bouquets: bouquets,
       decoders: decoders,
       customers: customers,
+      subscriptionInputData: SubscriptionInputData(),
+      forAdding: true,
+    ));
+  }
+
+  Future<void> loadEditingForm(int subscriptionId) async {
+    final bouquets = await _bouquetsDao.allBouquets;
+
+    final subscription = await _subscriptionsDao.findById(subscriptionId);
+    final decoder = await _decodersDao.findById(subscription.decoderId);
+    final customer = await _customersDao.findById(decoder.customerId);
+
+    emit(SubscriptionFormLoaded(
+      bouquets: bouquets,
+      decoders: [decoder],
+      customers: [customer],
+      subscriptionInputData: SubscriptionInputData.init(
+        subcriptionId: subscription.id,
+        bouquetId: subscription.bouquetId,
+        customerId: decoder.customerId,
+        decoderId: decoder.id,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        paid: subscription.paid,
+      ),
+      forAdding: true,
     ));
   }
 
@@ -53,28 +80,59 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     try {
       emit(AddingSubscription());
 
-      await _subscriptionsDao.addSubscription(SubscriptionsCompanion(
-        bouquetId: Value(subscriptionInputData.bouquetId),
-        decoderId: Value(subscriptionInputData.decoderId),
-        startDate: Value(subscriptionInputData.startDate),
-        endDate: Value(subscriptionInputData.endDate),
-        paid: Value(subscriptionInputData.paid),
-      ));
+      final subscriptionId = await _subscriptionsDao
+          .addSubscription(subscriptionInputData.companion);
 
       await Future.delayed(const Duration(milliseconds: 500));
 
       emit(SubscriptionAdded());
+      final addSubscription =
+          await _subscriptionsDao.findSubscriptionDetail(subscriptionId);
+      //zonedScheduleNotification(addSubscription!);
 
       _notificationCubit.push(
         NotificationType.success,
         "Abonnement ajouté avec succès !",
       );
 
-      loadSubscriptions();
+      await loadSubscriptions();
+      loadForm();
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
         "Error lors de l'ajout de l'abonnement !",
+      );
+    }
+  }
+
+  Future<void> updateSubscription(
+    SubscriptionInputData subscriptionInputData,
+  ) async {
+    try {
+      final subscription = await _subscriptionsDao.findById(
+        subscriptionInputData.subcriptionId!,
+      );
+      final newSubscription = subscription.copyWith(
+        bouquetId: subscriptionInputData.bouquetId,
+        decoderId: subscriptionInputData.decoderId,
+        paid: subscriptionInputData.paid,
+        startDate: subscriptionInputData.startDate,
+        endDate: subscriptionInputData.endDate,
+      );
+
+      await _subscriptionsDao.updateSubscription(newSubscription);
+
+      _notificationCubit.push(
+        NotificationType.success,
+        "Abonnement ajouté avec succès !",
+      );
+
+      await loadSubscriptions();
+      loadForm();
+    } catch (e) {
+      _notificationCubit.push(
+        NotificationType.error,
+        "Error lors de la mise à jour",
       );
     }
   }

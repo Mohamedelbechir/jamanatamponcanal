@@ -19,12 +19,28 @@ final class SubscriptionFormLoaded extends SubscriptionState {
   final List<Customer> customers;
   final List<Decoder> decoders;
   final List<Bouquet> bouquets;
+  final SubscriptionInputData subscriptionInputData;
+  final bool forAdding;
 
   const SubscriptionFormLoaded({
     required this.customers,
     required this.decoders,
     required this.bouquets,
+    required this.subscriptionInputData,
+    required this.forAdding,
   });
+
+  Decoder? decoder(int? decoderId) {
+    return decoders.where((decoder) => decoder.id == decoderId).firstOrNull;
+  }
+
+  Customer? customer(int? customerId) {
+    return customers.where((customer) => customer.id == customerId).firstOrNull;
+  }
+
+  Bouquet? bouquet(int? bouquetId) {
+    return bouquets.where((bouquet) => bouquet.id == bouquetId).firstOrNull;
+  }
 
   List<Decoder> decodersForCustomer(int customerId) {
     return decoders
@@ -37,6 +53,8 @@ final class SubscriptionFormLoaded extends SubscriptionState {
         customers,
         decoders,
         bouquets,
+        forAdding,
+        subscriptionInputData,
       ];
 }
 
