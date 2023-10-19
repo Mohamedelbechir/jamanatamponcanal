@@ -21,6 +21,10 @@ class DecodersDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Future<Decoder> findById(int id) {
+    return (select(decoders)..where((tbl) => tbl.id.equals(id))).getSingle();
+  }
+
   Future<List<DecoderDetail>> findDecodeurDetailsByCustomer(int customerId) {
     return customSelect("""
       select  id,
