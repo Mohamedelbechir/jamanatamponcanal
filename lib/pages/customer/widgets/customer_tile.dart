@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
+import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/models/customer_detail.dart';
 import 'package:jamanacanal/pages/customer/widgets/customer_number_widget.dart';
 import 'package:jamanacanal/pages/customer/widgets/form_customer.dart';
@@ -31,8 +32,15 @@ class _CustomerTileState extends State<CustomerTile> {
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: modalTopBorderRadius),
       builder: (_) {
-        return BlocProvider<CustomerCubit>.value(
-          value: context.read(),
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider<CustomerCubit>.value(
+              value: context.read(),
+            ),
+            BlocProvider<NotificationCubit>.value(
+              value: context.read(),
+            ),
+          ],
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: FormCustomer(
@@ -53,7 +61,6 @@ class _CustomerTileState extends State<CustomerTile> {
       onTap: showCustomerFormDialog,
       child: Container(
         padding: const EdgeInsets.all(8.0),
-        margin: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: Colors.grey[50],
           borderRadius: BorderRadius.circular(5),

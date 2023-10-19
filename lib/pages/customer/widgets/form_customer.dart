@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
+import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/pages/customer/widgets/removable_tag.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/modal_title.dart';
@@ -46,6 +47,7 @@ class _FormCustomerState extends State<FormCustomer> {
     _updateTextController(context.read<CustomerCubit>().state);
     subscription =
         context.read<CustomerCubit>().stream.listen(listenBouquetCubit);
+    context.read<NotificationCubit>().reset();
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
+import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'widgets/form_customer.dart';
 
@@ -29,8 +30,15 @@ class _CustomerPageState extends State<CustomerPage> {
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: modalTopBorderRadius),
       builder: (_) {
-        return BlocProvider<CustomerCubit>.value(
-          value: context.read(),
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider<CustomerCubit>.value(
+              value: context.read(),
+            ),
+            BlocProvider<NotificationCubit>.value(
+              value: context.read(),
+            ),
+          ],
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: FormCustomer(
@@ -42,9 +50,7 @@ class _CustomerPageState extends State<CustomerPage> {
           ),
         );
       },
-    ).then((value) {
-      context.read<CustomerCubit>().loadCustomerDetails();
-    });
+    );
   }
 
   @override
@@ -56,8 +62,10 @@ class _CustomerPageState extends State<CustomerPage> {
           buildWhen: (prev, next) => next is CustomersLoaded,
           builder: (context, state) {
             if (state is CustomersLoaded) {
-              return ListView.builder(
+              return ListView.separated(
                 physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(10.0),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemCount: state.customers.length,
                 itemBuilder: (_, index) {
                   return CustomerTile(

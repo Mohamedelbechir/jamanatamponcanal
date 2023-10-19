@@ -55,20 +55,30 @@ class CustomerCubit extends Cubit<CustomerState> {
   }
 
   Future<void> addCustomer(CustomerInputData customerInputData) async {
-    emit(CustomerFormUnderTraintement());
+    try {
+      emit(CustomerFormUnderTraintement());
 
-    int customerId = await _saveCustomer(customerInputData);
+      int customerId = await _saveCustomer(customerInputData);
 
-    await _saveDecoders(
-      customerInputData.decoderNumbers,
-      customerId,
-    );
+      await _saveDecoders(
+        customerInputData.decoderNumbers,
+        customerId,
+      );
 
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    emit(CustomerFormTraitementEnded());
-
-    loadCustomerDetails();
+      await Future.delayed(const Duration(milliseconds: 500));
+      _notificationCubit.push(
+        NotificationType.success,
+        "Abonnée ajouté avec succès !",
+      );
+      emit(CustomerFormTraitementEnded());
+      await loadCustomerDetails();
+      loadForm();
+    } catch (e) {
+      _notificationCubit.push(
+        NotificationType.error,
+        "Erreur lors de l'ajout",
+      );
+    }
   }
 
   Future<void> updateCustomer(CustomerInputData customerInputData) async {
