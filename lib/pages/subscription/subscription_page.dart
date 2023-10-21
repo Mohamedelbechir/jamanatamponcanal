@@ -1,9 +1,17 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jamanacanal/cubit/subcriptionFilter/subscription_filter_cubit.dart';
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
+import 'package:jamanacanal/daos/customer_dao.dart';
+import 'package:jamanacanal/models/database.dart';
+import 'package:jamanacanal/models/subscription_detail.dart';
+import 'package:jamanacanal/utils/functions.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
+import 'package:jamanacanal/widgets/empty_result.dart';
 import 'widgets/form_subscription.dart';
+import 'widgets/subscription_filter.dart';
 import 'widgets/subscription_tile.dart';
 
 class SubscriptionPage extends StatefulWidget {
@@ -14,14 +22,34 @@ class SubscriptionPage extends StatefulWidget {
 }
 
 class _SubscriptionPageState extends State<SubscriptionPage> {
+  final pageController = PageController();
+  var customers = <Customer>[];
   @override
   void initState() {
+    context
+        .read<SubscriptionFilterCubit>()
+        .stream
+        .listen(listenFilterStateChange);
+
+    context.read<CustomersDao>().allCustomers.then((value) {
+      setState(() {
+        customers = value;
+      });
+    });
+
     super.initState();
-    context.read<SubscriptionCubit>().loadSubscriptions();
+  }
+
+  void listenFilterStateChange(event) {
+    if (event is SubscriptionFilterLoaded) {
+      safeTry(() {
+        pageController.jumpToPage(event.currentFilter.index);
+      });
+    }
   }
 
   showAddSubscriptionFormDialog() async {
-    context.read<SubscriptionCubit>().loadForm();
+    context.read<SubscriptionCubit>().loadAddingForm();
 
     showModalBottomSheet(
       context: context,
@@ -32,6 +60,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         return MultiBlocProvider(
           providers: [
             BlocProvider<SubscriptionCubit>.value(value: context.read()),
+            BlocProvider<SubscriptionFilterCubit>.value(value: context.read()),
             BlocProvider<NotificationCubit>.value(value: context.read()),
           ],
           child: Padding(
@@ -50,27 +79,79 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     );
   }
 
+  String getEmptyMessage() {
+    String emptyMessage = "Aucun abonnement disponible";
+
+    final filterState = context.read<SubscriptionFilterCubit>().state;
+    if (filterState is SubscriptionFilterLoaded) {
+      emptyMessage = filterState.currentFilter == SubscriptionFilterType.noPaid
+          ? "Aucun abonnement non payé disponible"
+          : emptyMessage;
+    }
+    return emptyMessage;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
-          buildWhen: (prev, next) => next is SubscriptionLoaded,
-          builder: (context, state) {
-            if (state is SubscriptionLoaded) {
-              return ListView.separated(
-                  padding: const EdgeInsets.all(10.0),
-                  physics: const BouncingScrollPhysics(),
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemCount: state.subscriptions.length,
-                  itemBuilder: (context, index) {
-                    return SubscriptionTile(
-                      subscription: state.subscriptions.elementAt(index),
-                    );
-                  });
-            }
-            return const CircularProgressIndicator();
-          },
+        child: Column(
+          children: [
+            const SubscriptionFilter(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: DropdownSearch<Customer>(
+                enabled: true,
+                items: customers,
+                clearButtonProps: const ClearButtonProps(isVisible: true),
+                popupProps: const PopupProps.menu(showSearchBox: true),
+                itemAsString: (customer) {
+                  return "${customer.lastName} ${customer.firstName}";
+                },
+                onChanged: (customer) {
+                  context
+                      .read<SubscriptionFilterCubit>()
+                      .setCustomer(customer?.id);
+                },
+              ),
+            ),
+            Expanded(
+              child: PageView(
+                controller: pageController,
+                onPageChanged: (index) {
+                  context
+                      .read<SubscriptionFilterCubit>()
+                      .setCurrentFilter(SubscriptionFilterType.values[index]);
+                },
+                children: [
+                  Center(
+                    child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
+                      buildWhen: (prev, next) => next is SubscriptionLoaded,
+                      builder: (context, state) {
+                        if (state is SubscriptionLoaded) {
+                          return _buidSubscriptionList(state.subscriptions);
+                        }
+                        return const CircularProgressIndicator();
+                      },
+                    ),
+                  ),
+                  Center(
+                    child: BlocBuilder<SubscriptionCubit, SubscriptionState>(
+                      buildWhen: (prev, next) {
+                        return next is NoPaidSubscriptionLoaded;
+                      },
+                      builder: (context, state) {
+                        if (state is NoPaidSubscriptionLoaded) {
+                          return _buidSubscriptionList(state.subscriptions);
+                        }
+                        return const CircularProgressIndicator();
+                      },
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       backgroundColor: Colors.white,
@@ -83,5 +164,43 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         ),
       ),
     );
+  }
+
+  StatelessWidget _buidSubscriptionList(
+      List<SubscriptionDetail> subscriptions) {
+    if (subscriptions.isNotEmpty) {
+      return ListView.separated(
+        padding: const EdgeInsets.all(10.0),
+        physics: const BouncingScrollPhysics(),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemCount: subscriptions.length,
+        itemBuilder: (context, index) {
+          return SubscriptionTile(
+            subscription: subscriptions.elementAt(index),
+          );
+        },
+      );
+    }
+    return EmptyResult(text: getEmptyMessage());
+  }
+
+  Widget _listList(SubscriptionState state) {
+    if (state is SubscriptionLoaded) {
+      if (state.subscriptions.isNotEmpty) {
+        return ListView.separated(
+          padding: const EdgeInsets.all(10.0),
+          physics: const BouncingScrollPhysics(),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemCount: state.subscriptions.length,
+          itemBuilder: (context, index) {
+            return SubscriptionTile(
+              subscription: state.subscriptions.elementAt(index),
+            );
+          },
+        );
+      }
+      return EmptyResult(text: getEmptyMessage());
+    }
+    return const CircularProgressIndicator();
   }
 }
