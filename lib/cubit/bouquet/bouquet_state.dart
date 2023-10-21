@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 part of './bouquet_cubit.dart';
 
 @immutable
@@ -17,6 +18,32 @@ final class BouquetLoaded extends BouquetState {
   List<Object?> get props => [bouquets];
 }
 
-final class AddingNewBouquet extends BouquetState {}
+class BouquetFormLoaded extends BouquetState {
+  final bool forAdding;
+  final BouquetInputData bouquetInputData;
 
-final class BouquetAdded extends BouquetState {}
+  BouquetFormLoaded({
+    this.forAdding = true,
+    required this.bouquetInputData,
+  });
+
+  BouquetFormLoaded copyWith({
+    bool? forAdding,
+    BouquetInputData? bouquetInputData,
+  }) {
+    return BouquetFormLoaded(
+      forAdding: forAdding ?? this.forAdding,
+      bouquetInputData: bouquetInputData ?? this.bouquetInputData,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        forAdding,
+        bouquetInputData,
+      ];
+}
+
+final class BouquetFormUnderTraitement extends BouquetState {}
+
+final class BouquetFormTraitementEnded extends BouquetState {}
