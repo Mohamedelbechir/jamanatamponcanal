@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
+import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/daos/decoder_dao.dart';
-import 'package:jamanacanal/daos/subscription_dao.dart';
 import 'package:jamanacanal/models/customer_detail.dart';
 import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/models/database.dart';
@@ -15,12 +16,15 @@ part 'customer_state.dart';
 class CustomerCubit extends Cubit<CustomerState> {
   final CustomersDao _customersDao;
   final DecodersDao _decodersDao;
-  final SubscriptionsDao _subscriptionsDao;
   final NotificationCubit _notificationCubit;
+  final SubscriptionCubit _subscriptionCubit;
+  final BouquetCubit _bouquetCubit;
+
   CustomerCubit(
     this._customersDao,
     this._decodersDao,
-    this._subscriptionsDao,
+    this._subscriptionCubit,
+    this._bouquetCubit,
     this._notificationCubit,
   ) : super(CustomerInitial());
 
@@ -48,10 +52,18 @@ class CustomerCubit extends Cubit<CustomerState> {
         firstName: customer.firstName,
         lastName: customer.lastName,
         phoneNumber: customer.phoneNumber,
-        numberCustomers: customer.numberCustomer.split("|").toSet(),
+        numberCustomers: _getCustomerNumbers(customer),
         decoderDetails: decoders.toSet(),
       ),
     ));
+  }
+
+  Set<String> _getCustomerNumbers(Customer customer) {
+    if (customer.numberCustomer == null || customer.numberCustomer == "") {
+      return {};
+    }
+
+    return customer.numberCustomer!.split("|").toSet();
   }
 
   Future<void> addCustomer(CustomerInputData customerInputData) async {
@@ -105,9 +117,7 @@ class CustomerCubit extends Cubit<CustomerState> {
           _decodersToRemove(oldDecoders, customerInputData.decoderNumbers);
 
       for (var decoderToRemove in decodersToRemove) {
-        if (await _canRemoveDecoder(decoderToRemove)) {
-          _decodersDao.deleteDecoder(decoderToRemove);
-        }
+        await _decodersDao.deleteDecoder(decoderToRemove);
       }
 
       await Future.delayed(const Duration(milliseconds: 500));
@@ -118,17 +128,14 @@ class CustomerCubit extends Cubit<CustomerState> {
       );
       emit(CustomerFormTraitementEnded());
 
-      loadCustomerDetails();
+      await loadCustomerDetails();
+      loadEditingForm(customerInputData.id!);
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
         "Error lors de la mise à jour des informations",
       );
     }
-  }
-
-  Future<bool> _canRemoveDecoder(Decoder decoderToDelete) async {
-    return await _subscriptionsDao.findByDecoder(decoderToDelete.id) == null;
   }
 
   Set<String> _decodersToAdd(
@@ -142,13 +149,13 @@ class CustomerCubit extends Cubit<CustomerState> {
 
   List<Decoder> _decodersToRemove(
     List<Decoder> oldDecoders,
-    Set<String> decodersFromFrom,
+    Set<String> decodersFromForm,
   ) {
-    return oldDecoders.fold(<Decoder>[], (collector, oldDecoder) {
-      if (!decodersFromFrom.contains(oldDecoder.number)) {
-        return List.from(collector)..add(oldDecoder);
+    return oldDecoders.fold(<Decoder>[], (decodersToRemove, oldDecoder) {
+      if (!decodersFromForm.contains(oldDecoder.number)) {
+        return List.from(decodersToRemove)..add(oldDecoder);
       }
-      return collector;
+      return decodersToRemove;
     });
   }
 
@@ -177,5 +184,12 @@ class CustomerCubit extends Cubit<CustomerState> {
     final currentState = state as CustomerFormLoaded;
 
     emit(currentState.copyWith(customerInputData: customerInputData));
+  }
+
+  void remove(int customerId) async {
+    await _customersDao.removeCustomer(customerId);
+    loadCustomerDetails();
+    _subscriptionCubit.refreshSubscription();
+    _bouquetCubit.load();
   }
 }
