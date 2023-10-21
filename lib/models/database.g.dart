@@ -324,14 +324,14 @@ class $CustomersTable extends Customers
       const VerificationMeta('phoneNumber');
   @override
   late final GeneratedColumn<String> phoneNumber = GeneratedColumn<String>(
-      'phone_number', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      'phone_number', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _numberCustomerMeta =
       const VerificationMeta('numberCustomer');
   @override
   late final GeneratedColumn<String> numberCustomer = GeneratedColumn<String>(
-      'number_customer', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      'number_customer', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
       [id, firstName, lastName, phoneNumber, numberCustomer];
@@ -365,16 +365,12 @@ class $CustomersTable extends Customers
           _phoneNumberMeta,
           phoneNumber.isAcceptableOrUnknown(
               data['phone_number']!, _phoneNumberMeta));
-    } else if (isInserting) {
-      context.missing(_phoneNumberMeta);
     }
     if (data.containsKey('number_customer')) {
       context.handle(
           _numberCustomerMeta,
           numberCustomer.isAcceptableOrUnknown(
               data['number_customer']!, _numberCustomerMeta));
-    } else if (isInserting) {
-      context.missing(_numberCustomerMeta);
     }
     return context;
   }
@@ -392,9 +388,9 @@ class $CustomersTable extends Customers
       lastName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}last_name'])!,
       phoneNumber: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}phone_number'])!,
-      numberCustomer: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}number_customer'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}phone_number']),
+      numberCustomer: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}number_customer']),
     );
   }
 
@@ -408,22 +404,26 @@ class Customer extends DataClass implements Insertable<Customer> {
   final int id;
   final String firstName;
   final String lastName;
-  final String phoneNumber;
-  final String numberCustomer;
+  final String? phoneNumber;
+  final String? numberCustomer;
   const Customer(
       {required this.id,
       required this.firstName,
       required this.lastName,
-      required this.phoneNumber,
-      required this.numberCustomer});
+      this.phoneNumber,
+      this.numberCustomer});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['first_name'] = Variable<String>(firstName);
     map['last_name'] = Variable<String>(lastName);
-    map['phone_number'] = Variable<String>(phoneNumber);
-    map['number_customer'] = Variable<String>(numberCustomer);
+    if (!nullToAbsent || phoneNumber != null) {
+      map['phone_number'] = Variable<String>(phoneNumber);
+    }
+    if (!nullToAbsent || numberCustomer != null) {
+      map['number_customer'] = Variable<String>(numberCustomer);
+    }
     return map;
   }
 
@@ -432,8 +432,12 @@ class Customer extends DataClass implements Insertable<Customer> {
       id: Value(id),
       firstName: Value(firstName),
       lastName: Value(lastName),
-      phoneNumber: Value(phoneNumber),
-      numberCustomer: Value(numberCustomer),
+      phoneNumber: phoneNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phoneNumber),
+      numberCustomer: numberCustomer == null && nullToAbsent
+          ? const Value.absent()
+          : Value(numberCustomer),
     );
   }
 
@@ -444,8 +448,8 @@ class Customer extends DataClass implements Insertable<Customer> {
       id: serializer.fromJson<int>(json['id']),
       firstName: serializer.fromJson<String>(json['firstName']),
       lastName: serializer.fromJson<String>(json['lastName']),
-      phoneNumber: serializer.fromJson<String>(json['phoneNumber']),
-      numberCustomer: serializer.fromJson<String>(json['numberCustomer']),
+      phoneNumber: serializer.fromJson<String?>(json['phoneNumber']),
+      numberCustomer: serializer.fromJson<String?>(json['numberCustomer']),
     );
   }
   @override
@@ -455,8 +459,8 @@ class Customer extends DataClass implements Insertable<Customer> {
       'id': serializer.toJson<int>(id),
       'firstName': serializer.toJson<String>(firstName),
       'lastName': serializer.toJson<String>(lastName),
-      'phoneNumber': serializer.toJson<String>(phoneNumber),
-      'numberCustomer': serializer.toJson<String>(numberCustomer),
+      'phoneNumber': serializer.toJson<String?>(phoneNumber),
+      'numberCustomer': serializer.toJson<String?>(numberCustomer),
     };
   }
 
@@ -464,14 +468,15 @@ class Customer extends DataClass implements Insertable<Customer> {
           {int? id,
           String? firstName,
           String? lastName,
-          String? phoneNumber,
-          String? numberCustomer}) =>
+          Value<String?> phoneNumber = const Value.absent(),
+          Value<String?> numberCustomer = const Value.absent()}) =>
       Customer(
         id: id ?? this.id,
         firstName: firstName ?? this.firstName,
         lastName: lastName ?? this.lastName,
-        phoneNumber: phoneNumber ?? this.phoneNumber,
-        numberCustomer: numberCustomer ?? this.numberCustomer,
+        phoneNumber: phoneNumber.present ? phoneNumber.value : this.phoneNumber,
+        numberCustomer:
+            numberCustomer.present ? numberCustomer.value : this.numberCustomer,
       );
   @override
   String toString() {
@@ -503,8 +508,8 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<int> id;
   final Value<String> firstName;
   final Value<String> lastName;
-  final Value<String> phoneNumber;
-  final Value<String> numberCustomer;
+  final Value<String?> phoneNumber;
+  final Value<String?> numberCustomer;
   const CustomersCompanion({
     this.id = const Value.absent(),
     this.firstName = const Value.absent(),
@@ -516,12 +521,10 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.id = const Value.absent(),
     required String firstName,
     required String lastName,
-    required String phoneNumber,
-    required String numberCustomer,
+    this.phoneNumber = const Value.absent(),
+    this.numberCustomer = const Value.absent(),
   })  : firstName = Value(firstName),
-        lastName = Value(lastName),
-        phoneNumber = Value(phoneNumber),
-        numberCustomer = Value(numberCustomer);
+        lastName = Value(lastName);
   static Insertable<Customer> custom({
     Expression<int>? id,
     Expression<String>? firstName,
@@ -542,8 +545,8 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       {Value<int>? id,
       Value<String>? firstName,
       Value<String>? lastName,
-      Value<String>? phoneNumber,
-      Value<String>? numberCustomer}) {
+      Value<String?>? phoneNumber,
+      Value<String?>? numberCustomer}) {
     return CustomersCompanion(
       id: id ?? this.id,
       firstName: firstName ?? this.firstName,
@@ -613,8 +616,8 @@ class $DecodersTable extends Decoders with TableInfo<$DecodersTable, Decoder> {
       'customer_id', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES customers (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES customers (id) ON DELETE CASCADE'));
   @override
   List<GeneratedColumn> get $columns => [id, number, customerId];
   @override
@@ -841,8 +844,8 @@ class $SubscriptionsTable extends Subscriptions
       'bouquet_id', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES bouquets (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES bouquets (id) ON DELETE CASCADE'));
   static const VerificationMeta _decoderIdMeta =
       const VerificationMeta('decoderId');
   @override
@@ -850,8 +853,8 @@ class $SubscriptionsTable extends Subscriptions
       'decoder_id', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES decoders (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES decoders (id) ON DELETE CASCADE'));
   @override
   List<GeneratedColumn> get $columns =>
       [id, startDate, endDate, paid, bouquetId, decoderId];
@@ -1142,4 +1145,30 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
       [bouquets, customers, decoders, subscriptions];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('customers',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('decoders', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('bouquets',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('subscriptions', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('decoders',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('subscriptions', kind: UpdateKind.delete),
+            ],
+          ),
+        ],
+      );
 }

@@ -61,4 +61,8 @@ class CustomersDao extends DatabaseAccessor<AppDatabase>
   Future<bool> updateCustomer(Customer customer) {
     return update(customers).replace(customer);
   }
+
+  Future<int> removeCustomer(int id) {
+    return (delete(customers)..where((tbl) => tbl.id.equals(id))).go();
+  }
 }

@@ -27,6 +27,7 @@ class BouquetsDao extends DatabaseAccessor<AppDatabase>
       return BouquetDetail(
           id: row.read("id"),
           name: row.read("name"),
+          obsolte: row.read<bool>("obsolete"),
           updateAt: row.read("update_at"),
           nombreOfActiveSubcription:
               row.read<int>("number_of_active_subscription"));
@@ -39,8 +40,16 @@ class BouquetsDao extends DatabaseAccessor<AppDatabase>
         .insert(bouquet.copyWith(createAt: Value(DateTime.now())));
   }
 
+  Future updateBouquetCompanion(BouquetsCompanion bouquet) {
+    return update(bouquets)
+        .replace(bouquet.copyWith(updateAt: Value(DateTime.now())));
+  }
+
   Future updateBouquet(Bouquet bouquet) {
     return update(bouquets)
         .replace(bouquet.copyWith(updateAt: Value(DateTime.now())));
   }
+
+  Future<Bouquet> findById(int bouquetId) =>
+      (select(bouquets)..where((tbl) => tbl.id.equals(bouquetId))).getSingle();
 }

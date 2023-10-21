@@ -31,12 +31,15 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
             s.paid, 
             b.name as bouquet_name,
             d.number AS decoder_number,
+            c.phone_number,
+            d.customer_id,
             c.first_name || ' ' || c.last_name AS customer_full_name
                    
       FROM subscriptions s
       INNER JOIN bouquets b ON b.id = s.bouquet_id
       INNER JOIN decoders d ON d.id = s.decoder_id
       INNER JOIN customers c ON c.id = d.customer_id
+      order by end_date asc
 
       """,
       // used for the stream: the stream will update when either table changes
@@ -44,8 +47,86 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
     ).map((row) {
       return SubscriptionDetail(
         id: row.read<int>('id'),
+        customerId: row.read<int>('customer_id'),
         paid: row.read<bool>("paid"),
         bouquetName: row.read<String>("bouquet_name"),
+        phoneNumber: row.read<String>("phone_number"),
+        customerFullName: row.read<String>('customer_full_name'),
+        decoderNumber: row.read<String>("decoder_number"),
+        startDate: row.read<DateTime>("start_date"),
+        endDate: row.read<DateTime>("end_date"),
+      );
+    }).get();
+  }
+
+  Future<List<SubscriptionDetail>> allNoPaidSubscriptionDetails() {
+    return customSelect(
+      """
+      SELECT s.id, 
+            s.start_date, 
+            s.end_date, 
+            s.paid, 
+            b.name as bouquet_name,
+            d.number AS decoder_number,
+            c.phone_number,
+            d.customer_id,
+            c.first_name || ' ' || c.last_name AS customer_full_name
+                   
+      FROM subscriptions s
+      INNER JOIN bouquets b ON b.id = s.bouquet_id
+      INNER JOIN decoders d ON d.id = s.decoder_id
+      INNER JOIN customers c ON c.id = d.customer_id
+      WHERE s.paid = 0
+      ORDER BY end_date asc
+
+      """,
+      // used for the stream: the stream will update when either table changes
+      // readsFrom: {customers, subscriptions, decoders, bouquets},
+    ).map((row) {
+      return SubscriptionDetail(
+        id: row.read<int>('id'),
+        customerId: row.read<int>('customer_id'),
+        paid: row.read<bool>("paid"),
+        bouquetName: row.read<String>("bouquet_name"),
+        phoneNumber: row.read<String>("phone_number"),
+        customerFullName: row.read<String>('customer_full_name'),
+        decoderNumber: row.read<String>("decoder_number"),
+        startDate: row.read<DateTime>("start_date"),
+        endDate: row.read<DateTime>("end_date"),
+      );
+    }).get();
+  }
+
+  Future<List<SubscriptionDetail>> allActiveSubscriptionDetails() {
+    return customSelect(
+      """
+      SELECT s.id, 
+            s.start_date, 
+            s.end_date, 
+            s.paid, 
+            b.name as bouquet_name,
+            d.number AS decoder_number,
+            c.phone_number,
+            d.customer_id,
+            c.first_name || ' ' || c.last_name AS customer_full_name
+                   
+      FROM subscriptions s
+      INNER JOIN bouquets b ON b.id = s.bouquet_id
+      INNER JOIN decoders d ON d.id = s.decoder_id
+      INNER JOIN customers c ON c.id = d.customer_id
+      WHERE s.start_date <= strftime('%s', 'now') AND s.end_date >= strftime('%s', 'now')
+      ORDER BY end_date asc
+
+      """,
+      // used for the stream: the stream will update when either table changes
+      // readsFrom: {customers, subscriptions, decoders, bouquets},
+    ).map((row) {
+      return SubscriptionDetail(
+        id: row.read<int>('id'),
+        customerId: row.read<int>('customer_id'),
+        paid: row.read<bool>("paid"),
+        bouquetName: row.read<String>("bouquet_name"),
+        phoneNumber: row.read<String>("phone_number"),
         customerFullName: row.read<String>('customer_full_name'),
         decoderNumber: row.read<String>("decoder_number"),
         startDate: row.read<DateTime>("start_date"),
@@ -63,6 +144,8 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
             s.paid, 
             b.name as bouquet_name,
             d.number AS decoder_number,
+            c.phone_number,
+            d.customer_id,
             c.first_name || ' ' || c.last_name AS customer_full_name
                    
       FROM subscriptions s
@@ -78,8 +161,10 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
     ).map((row) {
       return SubscriptionDetail(
         id: row.read<int>('id'),
+        customerId: row.read<int>('customer_id'),
         paid: row.read<bool>("paid"),
         bouquetName: row.read<String>("bouquet_name"),
+        phoneNumber: row.read<String>("phone_number"),
         customerFullName: row.read<String>('customer_full_name'),
         decoderNumber: row.read<String>("decoder_number"),
         startDate: row.read<DateTime>("start_date"),

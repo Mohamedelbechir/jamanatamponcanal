@@ -37,6 +37,7 @@ class SubscriptionInputData extends Equatable {
 
   @override
   List<Object?> get props => [
+        subcriptionId,
         customerId,
         bouquetId,
         decoderId,
@@ -46,6 +47,7 @@ class SubscriptionInputData extends Equatable {
       ];
 
   SubscriptionInputData copyWith({
+    int? subcriptionId,
     int? customerId,
     int? bouquetId,
     int? decoderId,
@@ -54,6 +56,7 @@ class SubscriptionInputData extends Equatable {
     DateTime? endDate,
   }) {
     return SubscriptionInputData.init(
+      subcriptionId: subcriptionId ?? this.subcriptionId,
       customerId: customerId ?? this.customerId,
       bouquetId: bouquetId ?? this.bouquetId,
       decoderId: decoderId ?? this.decoderId,
