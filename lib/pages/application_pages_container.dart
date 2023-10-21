@@ -1,8 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:jamanacanal/pages/subscription/subscription.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
+import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
+import 'package:jamanacanal/pages/subscription/subscription_page.dart';
 import 'package:jamanacanal/pages/about/about.dart';
 import 'package:jamanacanal/pages/bouquet/bouquet_page.dart';
 import 'package:jamanacanal/pages/customer/customer.dart';
+import 'package:jamanacanal/notification/notification.dart';
 
 import '../widgets/app_title.dart';
 
@@ -18,15 +25,65 @@ class ApplicationPagesContainer extends StatefulWidget {
 
 class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
   final _pages = <Widget>[
-    const AbonnementPage(),
+    const SubscriptionPage(),
     const CustomerPage(),
     const BouquetPage(),
     const AboutPage()
   ];
 
   int _selectedIndex = 0;
+  bool _notificationsEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    isAndroidPermissionGranted();
+    requestPermissions();
+    configureDidReceiveLocalNotificationSubject();
+    configureSelectNotificationSubject(context);
+  }
+
+  Future<void> requestPermissions() async {
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    final bool? grantedNotificationPermission =
+        await androidImplementation?.requestNotificationsPermission();
+    setState(() {
+      _notificationsEnabled = grantedNotificationPermission ?? false;
+    });
+  }
+
+  void configureDidReceiveLocalNotificationSubject() {
+    didReceiveLocalNotificationStream.stream
+        .listen((NotificationResponse receivedNotification) async {
+      debugPrint(receivedNotification.actionId);
+    });
+  }
+
+  Future<void> isAndroidPermissionGranted() async {
+    if (Platform.isAndroid) {
+      final bool granted = await flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          false;
+
+      setState(() {
+        _notificationsEnabled = granted;
+        debugPrint("Notification grant = $granted");
+      });
+    }
+  }
 
   _onItemTapped(int selectedIndex) {
+    if (selectedIndex == 0) {
+      context.read<SubscriptionCubit>().refreshSubscription();
+    }
+    if (selectedIndex == 2) {
+      context.read<BouquetCubit>().load();
+    }
     setState(() {
       _selectedIndex = selectedIndex;
     });
