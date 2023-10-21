@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
+import 'package:jamanacanal/widgets/empty_result.dart';
 import 'widgets/form_customer.dart';
 
 import 'widgets/customer_tile.dart';
@@ -62,6 +63,9 @@ class _CustomerPageState extends State<CustomerPage> {
           buildWhen: (prev, next) => next is CustomersLoaded,
           builder: (context, state) {
             if (state is CustomersLoaded) {
+              if (state.customers.isEmpty) {
+                return const EmptyResult(text: "Aucun abonné disponible");
+              }
               return ListView.separated(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.all(10.0),

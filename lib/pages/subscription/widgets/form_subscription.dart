@@ -11,6 +11,8 @@ import 'package:jamanacanal/widgets/form_action_buttons.dart';
 import 'package:jamanacanal/widgets/modal_title.dart';
 import '../../../models/subscription_input_data.dart';
 import '../../../widgets/notification_widget.dart';
+import 'subscription_paid_widget.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 
 class FormSubscription extends StatefulWidget {
   const FormSubscription({
@@ -26,48 +28,53 @@ class FormSubscription extends StatefulWidget {
 }
 
 class _FormSubscriptionState extends State<FormSubscription> {
-  DateTime _startSelectedDate = DateTime.now();
-  DateTime _endSelectedDate = DateTime.now().add(const Duration(days: 30));
-
   final _startDateTextEditingController = TextEditingController();
   final _endDateTextEditingController = TextEditingController();
-
-  Customer? _selectedCustomer;
-
-  Bouquet? _selectedBouquet;
-  Decoder? _selectedDecoder;
 
   bool isSubmitting = false;
   StreamSubscription<SubscriptionState>? subscription;
 
-  bool _isPaid = false;
   @override
   void initState() {
     super.initState();
 
-    _setDateDisplay(_startSelectedDate, _startDateTextEditingController);
-    _setDateDisplay(_endSelectedDate, _endDateTextEditingController);
-
-    _refreshFormValidationState();
-
-    subscription =
-        context.read<SubscriptionCubit>().stream.listen(listenBouquetCubit);
-
     context.read<NotificationCubit>().reset();
+
+    final currentState = context.read<SubscriptionCubit>().state;
+    if (currentState is SubscriptionFormLoaded) {
+      _setDatesDisplay(currentState.subscriptionInputData);
+      _refreshFormValidationState(currentState.subscriptionInputData);
+    }
+
+    subscription = context
+        .read<SubscriptionCubit>()
+        .stream
+        .listen(listenSubscriptionCubit);
   }
 
-  void listenBouquetCubit(state) {
+  void listenSubscriptionCubit(state) {
     setState(() {
-      if (state is AddingSubscription) {
+      if (state is SubscriptionFormUnderTraitement) {
         isSubmitting = true;
       } else {
         isSubmitting = false;
       }
-      if (state is SubscriptionAdded) {
-        // abonnement ajouté ajouté avec succès
-        //_formKey.currentState!.reset();
+      if (state is SubscriptionFormLoaded) {
+        _setDatesDisplay(state.subscriptionInputData);
+        _refreshFormValidationState(state.subscriptionInputData);
       }
     });
+  }
+
+  void _setDatesDisplay(SubscriptionInputData subscriptionInputData) {
+    _setDateDisplay(
+      subscriptionInputData.startDate,
+      _startDateTextEditingController,
+    );
+    _setDateDisplay(
+      subscriptionInputData.endDate,
+      _endDateTextEditingController,
+    );
   }
 
   @override
@@ -76,10 +83,13 @@ class _FormSubscriptionState extends State<FormSubscription> {
     subscription?.cancel();
   }
 
-  _selectDate({required ValueChanged<DateTime> onSelect}) async {
+  _selectDate({
+    required DateTime initialDate,
+    required ValueChanged<DateTime> onSelect,
+  }) async {
     DateTime? newSelectedDate = await showDatePicker(
         context: context,
-        initialDate: _startSelectedDate,
+        initialDate: initialDate,
         firstDate: DateTime(2000),
         lastDate: DateTime(2040));
     if (newSelectedDate != null) onSelect(newSelectedDate);
@@ -112,7 +122,7 @@ class _FormSubscriptionState extends State<FormSubscription> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ModalTitle(text: "Ajouter abonnement"),
+                ModalTitle(text: widget.formTitle),
                 Expanded(
                   child: SingleChildScrollView(
                     controller: controller,
@@ -125,7 +135,32 @@ class _FormSubscriptionState extends State<FormSubscription> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text("Choisir l'abonné"),
-                              DropdownButtonFormField<Customer>(
+                              DropdownSearch<Customer>(
+                                items: state.customers,
+                                popupProps: const PopupProps.menu(
+                                  showSearchBox: true,
+                                ),
+                                enabled: true,
+                                itemAsString: (value) =>
+                                    "${value.lastName} ${value.firstName}",
+                                validator: (items) {
+                                  if (items == null) {
+                                    return "Merci de choisir l'abonné";
+                                  }
+                                  return null;
+                                },
+                                selectedItem: state.customer(
+                                  state.subscriptionInputData.customerId,
+                                ),
+                                onChanged: (value) {
+                                  context
+                                      .read<SubscriptionCubit>()
+                                      .setCurrentFormData(state
+                                          .subscriptionInputData
+                                          .copyWith(customerId: value?.id));
+                                },
+                              ),
+                              /*  DropdownButtonFormField<Customer>(
                                 value: state.customer(
                                   state.subscriptionInputData.customerId,
                                 ),
@@ -133,10 +168,13 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                 items: _buildCustomerItemForDropwdown(
                                     state.customers),
                                 onChanged: (value) {
-                                  _selectedCustomer = value;
-                                  _refreshFormValidationState();
+                                  context
+                                      .read<SubscriptionCubit>()
+                                      .setCurrentFormData(state
+                                          .subscriptionInputData
+                                          .copyWith(customerId: value?.id));
                                 },
-                              ),
+                              ), */
                               const SizedBox(height: 10),
                               const Text('Choisir le bouquet'),
                               DropdownButtonFormField<Bouquet>(
@@ -147,11 +185,17 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                 items: _buildBouquetItemForDropwdown(
                                     state.bouquets),
                                 onChanged: (value) {
-                                  _selectedBouquet = value;
-                                  _refreshFormValidationState();
+                                  context
+                                      .read<SubscriptionCubit>()
+                                      .setCurrentFormData(state
+                                          .subscriptionInputData
+                                          .copyWith(bouquetId: value?.id));
+                                  _refreshFormValidationState(
+                                      state.subscriptionInputData);
                                 },
                               ),
-                              if (_selectedCustomer != null)
+                              if (state.subscriptionInputData.customerId !=
+                                  null)
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -162,12 +206,16 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                       value: state.decoder(state
                                           .subscriptionInputData.decoderId),
                                       items: _buildDecoderItemForDropwdown(
-                                        state.decodersForCustomer(
-                                            _selectedCustomer!.id),
+                                        state.decodersForCustomer(state
+                                            .subscriptionInputData.customerId!),
                                       ),
                                       onChanged: (value) {
-                                        _selectedDecoder = value;
-                                        _refreshFormValidationState();
+                                        context
+                                            .read<SubscriptionCubit>()
+                                            .setCurrentFormData(state
+                                                .subscriptionInputData
+                                                .copyWith(
+                                                    decoderId: value!.id));
                                       },
                                     ),
                                   ],
@@ -182,14 +230,21 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                     iconData: Icons.calendar_month),
                                 controller: _startDateTextEditingController,
                                 onTap: () {
-                                  _selectDate(onSelect: (value) {
-                                    _startSelectedDate = value;
-                                    _setDateDisplay(
-                                      value,
-                                      _startDateTextEditingController,
-                                    );
-                                    _refreshFormValidationState();
-                                  });
+                                  _selectDate(
+                                      initialDate:
+                                          state.subscriptionInputData.startDate,
+                                      onSelect: (value) {
+                                        context
+                                            .read<SubscriptionCubit>()
+                                            .setCurrentFormData(state
+                                                .subscriptionInputData
+                                                .copyWith(startDate: value));
+
+                                        _setDateDisplay(
+                                          value,
+                                          _startDateTextEditingController,
+                                        );
+                                      });
                                 },
                               ),
                               const SizedBox(height: 10),
@@ -202,42 +257,34 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                   iconData: Icons.calendar_month,
                                 ),
                                 onTap: () {
-                                  _selectDate(onSelect: (value) {
-                                    _endSelectedDate = value;
-                                    _setDateDisplay(
-                                      value,
-                                      _endDateTextEditingController,
-                                    );
-                                    _refreshFormValidationState();
-                                  });
+                                  _selectDate(
+                                      initialDate:
+                                          state.subscriptionInputData.endDate,
+                                      onSelect: (value) {
+                                        context
+                                            .read<SubscriptionCubit>()
+                                            .setCurrentFormData(state
+                                                .subscriptionInputData
+                                                .copyWith(endDate: value));
+
+                                        _setDateDisplay(
+                                          value,
+                                          _endDateTextEditingController,
+                                        );
+                                      });
                                 },
                               ),
                               const SizedBox(height: 10),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _isPaid = !_isPaid;
-                                  });
-                                },
-                                child: Row(
-                                  children: [
-                                    Switch(
-                                      value: _isPaid,
-                                      onChanged: (bool isPaid) {
-                                        setState(() {
-                                          _isPaid = isPaid;
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(width: 10),
-                                    const Text("Payer"),
-                                  ],
-                                ),
+                              SubscriptionPaidWidget(
+                                subscriptionInputData:
+                                    state.subscriptionInputData,
                               ),
                               const NotificationWidget(),
                               FormActionButtons(
                                 isSubmitting: isSubmitting,
-                                onSave: handleSave,
+                                onSave: () {
+                                  handleSave(state.subscriptionInputData);
+                                },
                               ),
                             ],
                           );
@@ -256,11 +303,13 @@ class _FormSubscriptionState extends State<FormSubscription> {
     );
   }
 
-  void _refreshFormValidationState() {
+  void _refreshFormValidationState(
+    SubscriptionInputData subscriptionInputData,
+  ) {
     bool valid = true;
-    if (_selectedBouquet == null ||
-        _selectedCustomer == null ||
-        _selectedDecoder == null) {
+    if (subscriptionInputData.bouquetId == null ||
+        subscriptionInputData.customerId == null ||
+        subscriptionInputData.decoderId == null) {
       valid = false;
     }
     setState(() {
@@ -270,32 +319,10 @@ class _FormSubscriptionState extends State<FormSubscription> {
 
   bool _isFormValid = false;
 
-  handleSave() {
+  handleSave(SubscriptionInputData subscriptionInputData) {
     if (_isFormValid) {
-      _submitFormData();
+      widget.onSubmit(subscriptionInputData);
     }
-  }
-
-  void _submitFormData() {
-    context
-        .read<SubscriptionCubit>()
-        .addSubscription(SubscriptionInputData.init(
-          bouquetId: _selectedBouquet!.id,
-          customerId: _selectedCustomer!.id,
-          decoderId: _selectedDecoder!.id,
-          startDate: _startSelectedDate,
-          endDate: _endSelectedDate,
-          paid: _isPaid,
-        ));
-  }
-
-  _buildCustomerItemForDropwdown(List<Customer> decoders) {
-    return decoders.map((decoder) {
-      return DropdownMenuItem<Customer>(
-        value: decoder,
-        child: Text("${decoder.firstName} ${decoder.lastName}"),
-      );
-    }).toList();
   }
 
   _buildBouquetItemForDropwdown(List<Bouquet> bouquets) {

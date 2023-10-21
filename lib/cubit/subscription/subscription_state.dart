@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 part of 'subscription_cubit.dart';
 
 sealed class SubscriptionState extends Equatable {
@@ -9,9 +10,9 @@ sealed class SubscriptionState extends Equatable {
 
 final class SubscriptionInitial extends SubscriptionState {}
 
-final class AddingSubscription extends SubscriptionState {}
+final class SubscriptionFormUnderTraitement extends SubscriptionState {}
 
-final class SubscriptionAdded extends SubscriptionState {}
+final class SubscriptionFormTraitementEnded extends SubscriptionState {}
 
 final class SubscriptionFormLoading extends SubscriptionState {}
 
@@ -56,12 +57,40 @@ final class SubscriptionFormLoaded extends SubscriptionState {
         forAdding,
         subscriptionInputData,
       ];
+
+  SubscriptionFormLoaded copyWith({
+    List<Customer>? customers,
+    List<Decoder>? decoders,
+    List<Bouquet>? bouquets,
+    SubscriptionInputData? subscriptionInputData,
+    bool? forAdding,
+  }) {
+    return SubscriptionFormLoaded(
+      customers: customers ?? this.customers,
+      decoders: decoders ?? this.decoders,
+      bouquets: bouquets ?? this.bouquets,
+      subscriptionInputData:
+          subscriptionInputData ?? this.subscriptionInputData,
+      forAdding: forAdding ?? this.forAdding,
+    );
+  }
 }
 
 final class SubscriptionLoaded extends SubscriptionState {
   final List<SubscriptionDetail> subscriptions;
 
-  const SubscriptionLoaded({required this.subscriptions});
+  const SubscriptionLoaded({
+    required this.subscriptions,
+  });
+  @override
+  List<Object> get props => [subscriptions];
+}
+
+final class NoPaidSubscriptionLoaded extends SubscriptionState {
+  final List<SubscriptionDetail> subscriptions;
+  const NoPaidSubscriptionLoaded({
+    required this.subscriptions,
+  });
   @override
   List<Object> get props => [subscriptions];
 }
