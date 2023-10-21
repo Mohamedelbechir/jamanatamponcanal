@@ -8,6 +8,7 @@ import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/bold_date_format.dart';
 import 'package:jamanacanal/widgets/bold_tag.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:jamanacanal/pages/customer/widgets/phone_number_widget.dart';
 
 import '../../../widgets/customer_full_name.dart';
 
@@ -27,8 +28,8 @@ class SubscriptionTile extends StatefulWidget {
 }
 
 class _SubscriptionTileState extends State<SubscriptionTile> {
-  showAddSubscriptionFormDialog() async {
-    context.read<SubscriptionCubit>().loadForm();
+  showSubscriptionFormDialog() async {
+    context.read<SubscriptionCubit>().loadEditingForm(widget.subscription.id);
 
     showModalBottomSheet(
       context: context,
@@ -60,7 +61,7 @@ class _SubscriptionTileState extends State<SubscriptionTile> {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: showSubscriptionFormDialog,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: 8,
@@ -84,7 +85,9 @@ class _SubscriptionTileState extends State<SubscriptionTile> {
               ),
             ),
             CustomerFullName(
-                customerFullName: widget.subscription.customerFullName),
+              customerFullName: widget.subscription.customerFullName,
+            ),
+            PhoneNumberWidget(phoneNumber: widget.subscription.phoneNumber),
             Row(
               children: [
                 Text(
@@ -106,7 +109,7 @@ class _SubscriptionTileState extends State<SubscriptionTile> {
                   ),
               ],
             ),
-            Row(
+            Wrap(
               children: [
                 BoldDateFormat(date: widget.subscription.startDate),
                 const Padding(

@@ -25,7 +25,7 @@ class CustomerInputData extends Equatable {
   int? id;
   String firstName = "";
   String lastName = "";
-  String phoneNumber = "";
+  String? phoneNumber;
   Set<String> numberCustomers = {};
   Set<DecoderDetail> decoderDetails = {};
   Set<String> get decoderNumbers => decoderDetails.map((e) => e.number).toSet();
@@ -59,7 +59,7 @@ class CustomerInputData extends Equatable {
     String? lastName,
     String? phoneNumber,
     Set<String>? numberCustomers,
-    Set<DecoderDetail>? decoderNumbers,
+    Set<DecoderDetail>? decoderDetails,
   }) {
     return CustomerInputData.init(
       id: id ?? this.id,
@@ -67,7 +67,7 @@ class CustomerInputData extends Equatable {
       lastName: lastName ?? this.lastName,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       numberCustomers: numberCustomers ?? this.numberCustomers,
-      decoderDetails: decoderNumbers ?? this.decoderDetails,
+      decoderDetails: decoderDetails ?? this.decoderDetails,
     );
   }
 }

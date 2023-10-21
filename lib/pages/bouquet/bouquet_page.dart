@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
+import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
-import 'widgets/add_bouquet_form.dart';
+import '../../widgets/empty_result.dart';
+import 'widgets/form_bouquet.dart';
 
 import 'widgets/bouquet_tile.dart';
 
@@ -20,18 +22,31 @@ class _BouquetPageState extends State<BouquetPage> {
     context.read<BouquetCubit>().load();
   }
 
-  showAddBouquetFormDialog() {
+  showBouquetFormDialog() {
+    context.read<BouquetCubit>().loadAddForm();
     showModalBottomSheet(
       context: context,
       isDismissible: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: modalTopBorderRadius),
       builder: (_) {
-        return BlocProvider<BouquetCubit>.value(
-          value: context.read(),
-          child: const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: AddBouquetForm(),
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider<BouquetCubit>.value(
+              value: context.read(),
+            ),
+            BlocProvider<NotificationCubit>.value(
+              value: context.read(),
+            ),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FormBouquet(
+              formTitle: "Ajouter bouquet",
+              onSubmit: (bouquetInputData) {
+                context.read<BouquetCubit>().addBouquet(bouquetInputData.name);
+              },
+            ),
           ),
         );
       },
@@ -48,18 +63,13 @@ class _BouquetPageState extends State<BouquetPage> {
           builder: (context, state) {
             if (state is BouquetLoaded) {
               if (state.bouquets.isEmpty) {
-                return const Text(
-                  "Aucun bouquet disponible",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                );
+                return const EmptyResult(text: "Aucun bouquet disponible");
               }
               return Padding(
                 padding: const EdgeInsets.all(10.0),
-                child: ListView.builder(
+                child: ListView.separated(
                   physics: const BouncingScrollPhysics(),
+                  separatorBuilder: (_, __) => const SizedBox(height: 5),
                   itemBuilder: (_, index) {
                     return BouquetTile(
                       bouquet: state.bouquets.elementAt(index),
@@ -74,7 +84,7 @@ class _BouquetPageState extends State<BouquetPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showAddBouquetFormDialog,
+        onPressed: showBouquetFormDialog,
         backgroundColor: Colors.black,
         child: const Icon(
           Icons.add,

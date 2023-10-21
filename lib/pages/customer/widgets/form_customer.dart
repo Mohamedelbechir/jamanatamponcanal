@@ -12,6 +12,7 @@ import '../../../cubit/customer/customer_input_data.dart';
 import '../../../widgets/form_action_buttons.dart';
 import 'form_first_name.dart';
 import 'form_last_name.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 
 class FormCustomer extends StatefulWidget {
   const FormCustomer(
@@ -43,11 +44,11 @@ class _FormCustomerState extends State<FormCustomer> {
   @override
   void initState() {
     super.initState();
+    context.read<NotificationCubit>().reset();
 
     _updateTextController(context.read<CustomerCubit>().state);
     subscription =
         context.read<CustomerCubit>().stream.listen(listenBouquetCubit);
-    context.read<NotificationCubit>().reset();
   }
 
   @override
@@ -76,7 +77,7 @@ class _FormCustomerState extends State<FormCustomer> {
       setState(() {
         _lastNameTextController.text = customerInputData.lastName;
         _firstNameTextController.text = customerInputData.firstName;
-        _phoneNumberTextController.text = customerInputData.phoneNumber;
+        _phoneNumberTextController.text = customerInputData.phoneNumber ?? "";
       });
     }
   }
@@ -121,19 +122,19 @@ class _FormCustomerState extends State<FormCustomer> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  FormLastName(
-                                    controller: _lastNameTextController,
-                                    customerInputData: customerInputData,
-                                  ),
-                                  const SizedBox(height: 10),
                                   FormFirstName(
                                     controller: _firstNameTextController,
                                     customerInputData: customerInputData,
                                   ),
                                   const SizedBox(height: 10),
-                                  _buildCustomerNumber(state.customerInputData),
+                                  FormLastName(
+                                    controller: _lastNameTextController,
+                                    customerInputData: customerInputData,
+                                  ),
                                   const SizedBox(height: 10),
                                   _buildPhoneNumber(state.customerInputData),
+                                  const SizedBox(height: 10),
+                                  _buildCustomerNumber(state.customerInputData),
                                   const SizedBox(height: 10),
                                   _buildDecoder(state.customerInputData),
                                   const SizedBox(height: 10),
@@ -166,7 +167,8 @@ class _FormCustomerState extends State<FormCustomer> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Décodeurs (saisir un ou plusieurs décodeurs)"),
+        const Text(
+            "Décodeurs (saisir un ou plusieurs décodeurs | appuyer sur le + pour l'enregistrer)"),
         if (customerInputData.decoderDetails.isNotEmpty)
           Column(
             children: [
@@ -198,17 +200,20 @@ class _FormCustomerState extends State<FormCustomer> {
           decoration: AppInputDecoration(
             suffixIcon: InkWell(
               onTap: () {
-                final newCustomerInputData = customerInputData.copyWith(
-                    decoderNumbers: Set<DecoderDetail>.from(
-                        customerInputData.decoderDetails)
-                      ..add(DecoderDetail(
-                        number: _currentDecoderNumberTextController.text,
-                      )));
-                context
-                    .read<CustomerCubit>()
-                    .setCurrentFormData(newCustomerInputData);
+                if (!_isEmptyText(_currentDecoderNumberTextController)) {
+                  final newCustomerInputData = customerInputData.copyWith(
+                      decoderDetails: Set<DecoderDetail>.from(
+                          customerInputData.decoderDetails)
+                        ..add(DecoderDetail(
+                          number:
+                              _currentDecoderNumberTextController.text.trim(),
+                        )));
+                  context
+                      .read<CustomerCubit>()
+                      .setCurrentFormData(newCustomerInputData);
 
-                _currentDecoderNumberTextController.clear();
+                  _currentDecoderNumberTextController.clear();
+                }
               },
               child: const Icon(Icons.add),
             ),
@@ -217,6 +222,8 @@ class _FormCustomerState extends State<FormCustomer> {
       ],
     );
   }
+
+  final _contactPicker = FlutterContactPicker();
 
   Column _buildPhoneNumber(CustomerInputData customerInputData) {
     return Column(
@@ -232,24 +239,39 @@ class _FormCustomerState extends State<FormCustomer> {
                   phoneNumber: value,
                 ));
           },
-          validator: (value) {
-            return emptyNessValidation(
-              value,
-              'Merci de saisir le numéro de téléphone du client',
-            );
-          },
           keyboardType: TextInputType.number,
-          decoration: AppInputDecoration(),
+          decoration: AppInputDecoration(
+              suffixIcon: InkWell(
+            onTap: () {
+              _contactPicker.selectContact().then((contact) {
+                if (_isValidContact(contact)) {
+                  context
+                      .read<CustomerCubit>()
+                      .setCurrentFormData(customerInputData.copyWith(
+                        phoneNumber: contact!.phoneNumbers!.first,
+                      ));
+                }
+              });
+            },
+            child: const Icon(Icons.contact_page),
+          )),
         ),
       ],
     );
+  }
+
+  bool _isValidContact(Contact? contact) {
+    return contact != null &&
+        contact.phoneNumbers != null &&
+        contact.phoneNumbers!.isNotEmpty;
   }
 
   Column _buildCustomerNumber(CustomerInputData customerInputData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Numéro client (saisir un ou plusieurs)"),
+        const Text(
+            "Numéro client (saisir un ou plusieurs | appuyer sur le + pour l'enregistrer)"),
         if (customerInputData.numberCustomers.isNotEmpty)
           Column(
             children: [
@@ -266,32 +288,32 @@ class _FormCustomerState extends State<FormCustomer> {
           ),
         TextFormField(
           controller: _currentCustomerNumberTextController,
-          validator: (value) {
+          /* validator: (value) {
             var message = 'Merci de saisir le numéro du client';
             if (customerInputData.numberCustomers.isEmpty) {
-              return message;
-            }
-            if (customerInputData.numberCustomers.isNotEmpty) {
               return null;
             }
+
             return emptyNessValidation(value, message);
-          },
+          }, */
           keyboardType: TextInputType.number,
           decoration: AppInputDecoration(
             suffixIcon: InkWell(
               onTap: () {
-                setState(() {
-                  var newCustomerInputData = customerInputData.copyWith(
-                      numberCustomers: Set<String>.from(
-                    customerInputData.numberCustomers,
-                  )..add(_currentCustomerNumberTextController.text));
+                if (!_isEmptyText(_currentCustomerNumberTextController)) {
+                  setState(() {
+                    var newCustomerInputData = customerInputData.copyWith(
+                        numberCustomers: Set<String>.from(
+                      customerInputData.numberCustomers,
+                    )..add(_currentCustomerNumberTextController.text));
 
-                  context
-                      .read<CustomerCubit>()
-                      .setCurrentFormData(newCustomerInputData);
+                    context
+                        .read<CustomerCubit>()
+                        .setCurrentFormData(newCustomerInputData);
 
-                  _currentCustomerNumberTextController.clear();
-                });
+                    _currentCustomerNumberTextController.clear();
+                  });
+                }
               },
               child: const Icon(Icons.add),
             ),
@@ -301,40 +323,18 @@ class _FormCustomerState extends State<FormCustomer> {
     );
   }
 
-  Column _buildFirstName(CustomerInputData customerInputData) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Prénom"),
-        TextFormField(
-          controller: _firstNameTextController,
-          onChanged: (value) {
-            context
-                .read<CustomerCubit>()
-                .setCurrentFormData(customerInputData.copyWith(
-                  firstName: value,
-                ));
-          },
-          validator: (value) {
-            return emptyNessValidation(
-              value,
-              'Merci de saisir le prénom du client',
-            );
-          },
-          decoration: AppInputDecoration(),
-        ),
-      ],
-    );
+  bool _isEmptyText(TextEditingController textEditingController) {
+    return textEditingController.text.trim().isEmpty;
   }
 
   RemovableTag _buildRemovableTagForDecoder(
       DecoderDetail decoder, CustomerInputData customerInputData) {
     return RemovableTag(
       text: decoder.number,
-      readOnly: decoder.readOnly,
+      // readOnly: decoder.readOnly,
       onTapRemove: () {
         final newCustomerInputData = customerInputData.copyWith(
-            decoderNumbers: customerInputData.decoderDetails
+            decoderDetails: customerInputData.decoderDetails
                 .where((item) => item != decoder)
                 .toSet());
 
