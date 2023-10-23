@@ -139,14 +139,13 @@ Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
 }
 
 tz.TZDateTime _notificateDate(DateTime date) {
-  final now = TimeOfDay.now();
   return tz.TZDateTime.from(
     DateTime(
         date.year,
         date.month,
         date.day - 2,
-        now.hour, // heure
-        now.minute + 1, // minutes
+        9, // heure
+        30, // minutes
         30 // secode
         ),
     tz.local,
