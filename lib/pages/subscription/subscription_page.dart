@@ -96,13 +96,19 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
     return Scaffold(
       body: Center(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SubscriptionFilter(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text("Rechercher par abonné"),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: DropdownSearch<Customer>(
                 enabled: true,
                 items: customers,
+                selectedItem: _selectedCustomer,
                 clearButtonProps: const ClearButtonProps(isVisible: true),
                 popupProps: const PopupProps.menu(showSearchBox: true),
                 itemAsString: (customer) {
@@ -115,6 +121,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 },
               ),
             ),
+            const SizedBox(height: 5),
             Expanded(
               child: PageView(
                 controller: pageController,
@@ -164,6 +171,17 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
         ),
       ),
     );
+  }
+
+  Customer? get _selectedCustomer {
+    return () {
+      final filterState = context.read<SubscriptionFilterCubit>().state;
+      if (filterState is SubscriptionFilterLoaded) {
+        return customers
+            .where((element) => element.id == filterState.customerId)
+            .firstOrNull;
+      }
+    }();
   }
 
   StatelessWidget _buidSubscriptionList(

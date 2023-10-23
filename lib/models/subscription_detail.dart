@@ -9,7 +9,7 @@ class SubscriptionDetail extends Equatable {
   final DateTime endDate;
   final String bouquetName;
   final String decoderNumber;
-  final String phoneNumber;
+  final String? phoneNumber;
   final String customerFullName;
   final int customerId;
   final bool paid;
@@ -25,7 +25,7 @@ class SubscriptionDetail extends Equatable {
     required this.customerFullName,
     required this.paid,
   });
-
+  bool get hasPhoneNumber => phoneNumber != null && phoneNumber != "";
   @override
   List<Object?> get props => [
         id,

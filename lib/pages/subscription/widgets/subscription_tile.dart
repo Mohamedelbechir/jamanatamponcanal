@@ -87,7 +87,8 @@ class _SubscriptionTileState extends State<SubscriptionTile> {
             CustomerFullName(
               customerFullName: widget.subscription.customerFullName,
             ),
-            PhoneNumberWidget(phoneNumber: widget.subscription.phoneNumber),
+            if (widget.subscription.hasPhoneNumber)
+              PhoneNumberWidget(phoneNumber: widget.subscription.phoneNumber!),
             Row(
               children: [
                 Text(
