@@ -16,7 +16,11 @@ import '../widgets/app_title.dart';
 enum AppPage { home, bouquet, about }
 
 class ApplicationPagesContainer extends StatefulWidget {
-  const ApplicationPagesContainer({super.key});
+  const ApplicationPagesContainer({
+    super.key,
+    required this.notificationAppLaunchDetails,
+  });
+  final NotificationAppLaunchDetails? notificationAppLaunchDetails;
 
   @override
   State<ApplicationPagesContainer> createState() =>
@@ -32,7 +36,6 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
   ];
 
   int _selectedIndex = 0;
-  bool _notificationsEnabled = false;
 
   @override
   void initState() {
@@ -41,6 +44,14 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
     requestPermissions();
     configureDidReceiveLocalNotificationSubject();
     configureSelectNotificationSubject(context);
+    if (widget.notificationAppLaunchDetails?.didNotificationLaunchApp ??
+        false) {
+      if (widget.notificationAppLaunchDetails!.notificationResponse?.payload !=
+          null) {
+        handleNotificationResponse(
+            widget.notificationAppLaunchDetails!.notificationResponse);
+      }
+    }
   }
 
   Future<void> requestPermissions() async {
@@ -48,11 +59,7 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
         flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
 
-    final bool? grantedNotificationPermission =
-        await androidImplementation?.requestNotificationsPermission();
-    setState(() {
-      _notificationsEnabled = grantedNotificationPermission ?? false;
-    });
+    await androidImplementation?.requestNotificationsPermission();
   }
 
   void configureDidReceiveLocalNotificationSubject() {
@@ -64,16 +71,13 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
 
   Future<void> isAndroidPermissionGranted() async {
     if (Platform.isAndroid) {
-      final bool granted = await flutterLocalNotificationsPlugin
+      final granted = await flutterLocalNotificationsPlugin
               .resolvePlatformSpecificImplementation<
                   AndroidFlutterLocalNotificationsPlugin>()
               ?.areNotificationsEnabled() ??
           false;
 
-      setState(() {
-        _notificationsEnabled = granted;
-        debugPrint("Notification grant = $granted");
-      });
+      debugPrint("Notification grant = $granted");
     }
   }
 

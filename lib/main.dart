@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
@@ -16,27 +17,30 @@ import 'package:jamanacanal/notification/notification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final database = AppDatabase();
-
   configureLocalTimeZone();
   await initializeFlutterLocalNotificationsPlugin();
-  runApp(Application(database));
+  final notificationAppLaunchDetails =
+      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+  final database = AppDatabase();
+
+  runApp(Application(database, notificationAppLaunchDetails));
 }
 
 class Application extends StatefulWidget {
-  const Application(this.appDatabase, {super.key});
+  const Application(
+    this.appDatabase,
+    this.notificationAppLaunchDetails, {
+    super.key,
+  });
   final AppDatabase appDatabase;
+  final NotificationAppLaunchDetails? notificationAppLaunchDetails;
 
   @override
   State<Application> createState() => _ApplicationState();
 }
 
 class _ApplicationState extends State<Application> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   void dispose() {
     didReceiveLocalNotificationStream.close();
@@ -110,7 +114,9 @@ class _ApplicationState extends State<Application> {
             ),
           ),
         ],
-        child: const ApplicationPagesContainer(),
+        child: ApplicationPagesContainer(
+          notificationAppLaunchDetails: widget.notificationAppLaunchDetails,
+        ),
       ),
     );
   }

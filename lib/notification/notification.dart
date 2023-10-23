@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
@@ -55,7 +54,7 @@ void configureSelectNotificationSubject(BuildContext context) {
       builder: (_) {
         context
             .read<SubscriptionFilterCubit>()
-            .setCurrentFilter(SubscriptionFilterType.active);
+            .setCustomer(SubscriptionDetail.fromJson(payload!).customerId);
 
         return MultiBlocProvider(
           providers: [
@@ -79,21 +78,26 @@ void configureSelectNotificationSubject(BuildContext context) {
 Future<void> initializeFlutterLocalNotificationsPlugin() async {
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    onDidReceiveNotificationResponse:
-        (NotificationResponse notificationResponse) {
-      switch (notificationResponse.notificationResponseType) {
-        case NotificationResponseType.selectedNotification:
-          selectNotificationStream.add(notificationResponse.payload);
-          break;
-        case NotificationResponseType.selectedNotificationAction:
-          if (notificationResponse.actionId == callCustomerId) {
-            launchUrl(Uri.parse('tel:${notificationResponse.payload}'));
-          }
-          break;
-      }
-    },
+    onDidReceiveNotificationResponse: handleNotificationResponse,
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
+}
+
+void handleNotificationResponse(notificationResponse) {
+  switch (notificationResponse.notificationResponseType) {
+    case NotificationResponseType.selectedNotification:
+      selectNotificationStream.add(notificationResponse.payload);
+      break;
+    case NotificationResponseType.selectedNotificationAction:
+      if (notificationResponse.actionId == callCustomerId) {
+        final subscription =
+            SubscriptionDetail.fromJson(notificationResponse.payload!);
+        if (subscription.phoneNumber != null) {
+          launchUrl(Uri.parse('tel:${subscription.phoneNumber}'));
+        }
+      }
+      break;
+  }
 }
 
 Future<void> configureLocalTimeZone() async {
@@ -111,9 +115,9 @@ Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
     _notificateDate(subscription.endDate),
     const NotificationDetails(
         android: AndroidNotificationDetails(
-      'your channel id',
-      'your channel name',
-      channelDescription: 'your channel description',
+      'jamanacanal_channel_id',
+      'jamanacanal_channel_name',
+      channelDescription: 'jamana canal',
       priority: Priority.high,
       importance: Importance.high,
       playSound: true,
@@ -127,7 +131,7 @@ Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
         ),
       ],
     )),
-    payload: subscription.phoneNumber,
+    payload: subscription.toJson(),
     androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     uiLocalNotificationDateInterpretation:
         UILocalNotificationDateInterpretation.absoluteTime,
@@ -135,13 +139,14 @@ Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
 }
 
 tz.TZDateTime _notificateDate(DateTime date) {
+  final now = TimeOfDay.now();
   return tz.TZDateTime.from(
     DateTime(
         date.year,
         date.month,
         date.day - 2,
-        9, // heure
-        30, // minutes
+        now.hour, // heure
+        now.minute + 1, // minutes
         30 // secode
         ),
     tz.local,
