@@ -146,7 +146,7 @@ tz.TZDateTime _notificateDate(DateTime date) {
         date.day - 2,
         9, // heure
         30, // minutes
-        30 // secode
+        30 // seconde
         ),
     tz.local,
   );
