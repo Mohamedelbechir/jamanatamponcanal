@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
+import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/pages/subscription/subscription_page.dart';
 import 'package:jamanacanal/pages/about/about.dart';
@@ -84,6 +85,9 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
   _onItemTapped(int selectedIndex) {
     if (selectedIndex == 0) {
       context.read<SubscriptionCubit>().refreshSubscription();
+    }
+    if (selectedIndex == 1) {
+      context.read<CustomerCubit>().loadCustomerDetails();
     }
     if (selectedIndex == 2) {
       context.read<BouquetCubit>().load();
