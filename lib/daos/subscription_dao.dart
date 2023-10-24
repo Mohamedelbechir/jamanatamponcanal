@@ -39,11 +39,9 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
       INNER JOIN bouquets b ON b.id = s.bouquet_id
       INNER JOIN decoders d ON d.id = s.decoder_id
       INNER JOIN customers c ON c.id = d.customer_id
-      order by end_date asc
+      ORDER by end_date asc
 
       """,
-      // used for the stream: the stream will update when either table changes
-      // readsFrom: {customers, subscriptions, decoders, bouquets},
     ).map((row) {
       return SubscriptionDetail(
         id: row.read<int>('id'),
@@ -80,8 +78,6 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
       ORDER BY end_date asc
 
       """,
-      // used for the stream: the stream will update when either table changes
-      // readsFrom: {customers, subscriptions, decoders, bouquets},
     ).map((row) {
       return SubscriptionDetail(
         id: row.read<int>('id'),
@@ -118,8 +114,6 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
       ORDER BY end_date asc
 
       """,
-      // used for the stream: the stream will update when either table changes
-      // readsFrom: {customers, subscriptions, decoders, bouquets},
     ).map((row) {
       return SubscriptionDetail(
         id: row.read<int>('id'),
@@ -153,11 +147,9 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
       INNER JOIN bouquets b ON b.id = s.bouquet_id
       INNER JOIN decoders d ON d.id = s.decoder_id
       INNER JOIN customers c ON c.id = d.customer_id
-      where s.id = $subscriptionId;
+      WHERE s.id = $subscriptionId;
 
       """,
-      // used for the stream: the stream will update when either table changes
-      // readsFrom: {customers, subscriptions, decoders, bouquets},
     ).map((row) {
       return SubscriptionDetail(
         id: row.read<int>('id'),
