@@ -141,8 +141,9 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                   showSearchBox: true,
                                 ),
                                 enabled: true,
-                                itemAsString: (value) =>
-                                    "${value.lastName} ${value.firstName}",
+                                itemAsString: (customer) {
+                                  return "${customer.firstName} ${customer.lastName}";
+                                },
                                 validator: (items) {
                                   if (items == null) {
                                     return "Merci de choisir l'abonné";
@@ -160,21 +161,6 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                           .copyWith(customerId: value?.id));
                                 },
                               ),
-                              /*  DropdownButtonFormField<Customer>(
-                                value: state.customer(
-                                  state.subscriptionInputData.customerId,
-                                ),
-                                decoration: AppInputDecoration(),
-                                items: _buildCustomerItemForDropwdown(
-                                    state.customers),
-                                onChanged: (value) {
-                                  context
-                                      .read<SubscriptionCubit>()
-                                      .setCurrentFormData(state
-                                          .subscriptionInputData
-                                          .copyWith(customerId: value?.id));
-                                },
-                              ), */
                               const SizedBox(height: 10),
                               const Text('Choisir le bouquet'),
                               DropdownButtonFormField<Bouquet>(

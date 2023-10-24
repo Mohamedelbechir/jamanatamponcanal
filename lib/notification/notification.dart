@@ -133,6 +133,10 @@ Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
   );
 }
 
+Future<void> removeNotification(int subscriptionId) async {
+  await flutterLocalNotificationsPlugin.cancel(subscriptionId);
+}
+
 tz.TZDateTime _notificateDate(DateTime date) {
   return tz.TZDateTime.from(
     DateTime(

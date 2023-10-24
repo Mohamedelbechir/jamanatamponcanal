@@ -22,41 +22,6 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
     return into(subscriptions).insert(subscriptionsCompanion);
   }
 
-  Future<List<SubscriptionDetail>> allSubscriptionDetails() {
-    return customSelect(
-      """
-      SELECT s.id, 
-            s.start_date, 
-            s.end_date, 
-            s.paid, 
-            b.name as bouquet_name,
-            d.number AS decoder_number,
-            c.phone_number,
-            d.customer_id,
-            c.first_name || ' ' || c.last_name AS customer_full_name
-                   
-      FROM subscriptions s
-      INNER JOIN bouquets b ON b.id = s.bouquet_id
-      INNER JOIN decoders d ON d.id = s.decoder_id
-      INNER JOIN customers c ON c.id = d.customer_id
-      ORDER by end_date asc
-
-      """,
-    ).map((row) {
-      return SubscriptionDetail(
-        id: row.read<int>('id'),
-        customerId: row.read<int>('customer_id'),
-        paid: row.read<bool>("paid"),
-        bouquetName: row.read<String>("bouquet_name"),
-        phoneNumber: row.read<String>("phone_number"),
-        customerFullName: row.read<String>('customer_full_name'),
-        decoderNumber: row.read<String>("decoder_number"),
-        startDate: row.read<DateTime>("start_date"),
-        endDate: row.read<DateTime>("end_date"),
-      );
-    }).get();
-  }
-
   Future<List<SubscriptionDetail>> allNoPaidSubscriptionDetails() {
     return customSelect(
       """
@@ -110,7 +75,7 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
       INNER JOIN bouquets b ON b.id = s.bouquet_id
       INNER JOIN decoders d ON d.id = s.decoder_id
       INNER JOIN customers c ON c.id = d.customer_id
-      WHERE s.start_date <= strftime('%s', 'now') AND s.end_date >= strftime('%s', 'now')
+      WHERE s.end_date >= strftime('%s', 'now')
       ORDER BY end_date asc
 
       """,
@@ -179,5 +144,11 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
 
   Future<bool> updateSubscription(Subscription subscriptionsDao) {
     return (update(subscriptions).replace(subscriptionsDao));
+  }
+
+  Future<int> remove(int subscriptionId) {
+    return (delete(subscriptions)
+          ..where((tbl) => tbl.id.equals(subscriptionId)))
+        .go();
   }
 }

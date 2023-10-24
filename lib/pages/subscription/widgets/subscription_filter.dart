@@ -48,12 +48,12 @@ class _SubscriptionFilterState extends State<SubscriptionFilter> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Wrap(
+        alignment: WrapAlignment.spaceAround,
         children: [
           FilterItem(
             color: Colors.blue,
-            text: "Abonn. actifs",
+            text: "Abon. actifs + à venirs",
             icon: Icons.now_widgets_rounded,
             isSelected: _selectedFilter == SubscriptionFilterType.active,
             onTap: () {
@@ -64,7 +64,7 @@ class _SubscriptionFilterState extends State<SubscriptionFilter> {
           ),
           FilterItem(
             color: Colors.red,
-            text: "Abonn. non payé",
+            text: "Abon. non payés",
             icon: Icons.money_off,
             isSelected: _selectedFilter == SubscriptionFilterType.noPaid,
             onTap: () {

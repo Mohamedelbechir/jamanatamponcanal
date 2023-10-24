@@ -48,14 +48,20 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     }
   }
 
-  Future<void> loadSubscriptions() async {
-    emit(SubscriptionLoaded(
-      subscriptions: await _subscriptionsDao.allSubscriptionDetails(),
-    ));
-  }
+  Future<void> loadSubscriptions() => refreshSubscription();
 
   Future<void> refreshSubscription() async {
     await _listenFilterChange(_subscriptionFilterCubit.state);
+  }
+
+  Future<void> removeSubscription(int subscriptionId) async {
+    await _subscriptionsDao.remove(subscriptionId);
+
+    safeTry(() async {
+      await removeNotification(subscriptionId);
+    });
+
+    refreshSubscription();
   }
 
   Future<void> _loadNoPaidSubscriptions(int? customerId) async {
