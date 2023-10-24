@@ -17,21 +17,24 @@ class FilterItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10.0),
-        decoration: BoxDecoration(
-          color: isSelected ? color[50] : Colors.grey[50],
-          borderRadius: const BorderRadius.all(Radius.circular(5)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(width: 5),
-            Text(text)
-          ],
+    return Padding(
+      padding: const EdgeInsets.only(left: 10),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(10.0),
+          decoration: BoxDecoration(
+            color: isSelected ? color[50] : Colors.grey[50],
+            borderRadius: const BorderRadius.all(Radius.circular(5)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 5),
+              Text(text)
+            ],
+          ),
         ),
       ),
     );
