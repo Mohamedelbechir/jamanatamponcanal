@@ -112,7 +112,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 clearButtonProps: const ClearButtonProps(isVisible: true),
                 popupProps: const PopupProps.menu(showSearchBox: true),
                 itemAsString: (customer) {
-                  return "${customer.lastName} ${customer.firstName}";
+                  return "${customer.firstName} ${customer.lastName}";
                 },
                 onChanged: (customer) {
                   context
@@ -200,25 +200,5 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
       );
     }
     return EmptyResult(text: getEmptyMessage());
-  }
-
-  Widget _listList(SubscriptionState state) {
-    if (state is SubscriptionLoaded) {
-      if (state.subscriptions.isNotEmpty) {
-        return ListView.separated(
-          padding: const EdgeInsets.all(10.0),
-          physics: const BouncingScrollPhysics(),
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemCount: state.subscriptions.length,
-          itemBuilder: (context, index) {
-            return SubscriptionTile(
-              subscription: state.subscriptions.elementAt(index),
-            );
-          },
-        );
-      }
-      return EmptyResult(text: getEmptyMessage());
-    }
-    return const CircularProgressIndicator();
   }
 }

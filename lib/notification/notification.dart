@@ -11,10 +11,8 @@ import 'package:jamanacanal/pages/subscription/subscription_page.dart';
 
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 
-int id = 0;
 const String callCustomerId = "id_call_customer";
 const String notificationSound = "notification";
 
@@ -26,11 +24,10 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 /// Streams are created so that app can respond to notification-related events
 /// since the plugin is initialised in the `main` function
-final StreamController<NotificationResponse> didReceiveLocalNotificationStream =
+final didReceiveLocalNotificationStream =
     StreamController<NotificationResponse>.broadcast();
 
-final StreamController<String?> selectNotificationStream =
-    StreamController<String?>.broadcast();
+final selectNotificationStream = StreamController<String?>.broadcast();
 
 const initializationSettings =
     InitializationSettings(android: initializationSettingsAndroid);
@@ -106,8 +103,6 @@ Future<void> configureLocalTimeZone() async {
 }
 
 Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
-  setLocalMessagesForTimeago();
-
   await flutterLocalNotificationsPlugin.zonedSchedule(
     subscription.id,
     'Abonnement CANAL+',
@@ -150,9 +145,4 @@ tz.TZDateTime _notificateDate(DateTime date) {
         ),
     tz.local,
   );
-}
-
-void setLocalMessagesForTimeago() {
-  timeago.setLocaleMessages('fr', timeago.FrMessages());
-  timeago.setLocaleMessages('fr_short', timeago.FrShortMessages());
 }
