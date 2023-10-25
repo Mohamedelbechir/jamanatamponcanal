@@ -55,6 +55,16 @@ class FutureSubscriptionPaymentTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Text(
+                  subscription.bouquetName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[900],
+                    fontSize: 18,
+                  ),
+                ),
+              ),
               CustomerFullName(
                 customerFullName: subscription.customerFullName,
               ),

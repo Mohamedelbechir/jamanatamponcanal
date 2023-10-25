@@ -38,10 +38,10 @@ class _FutureSubscriptionPaymentPageState
             padding: const EdgeInsets.all(8.0),
             child: FormFutureSubscriptionPayment(
               formTitle: "Ajouter payement",
-              onSubmit: (customerId) {
+              onSubmit: (formData) {
                 context
                     .read<FutureSubscriptionPaymentCubit>()
-                    .addSubscription(customerId);
+                    .addSubscription(formData);
               },
             ),
           ),

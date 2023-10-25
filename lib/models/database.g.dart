@@ -1158,6 +1158,15 @@ class $FutureSubscriptionPaymentsTable extends FutureSubscriptionPayments
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("closed" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _bouquetIdMeta =
+      const VerificationMeta('bouquetId');
+  @override
+  late final GeneratedColumn<int> bouquetId = GeneratedColumn<int>(
+      'bouquet_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES bouquets (id) ON DELETE CASCADE'));
   static const VerificationMeta _customerIdMeta =
       const VerificationMeta('customerId');
   @override
@@ -1168,7 +1177,7 @@ class $FutureSubscriptionPaymentsTable extends FutureSubscriptionPayments
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'REFERENCES customers (id) ON DELETE CASCADE'));
   @override
-  List<GeneratedColumn> get $columns => [id, closed, customerId];
+  List<GeneratedColumn> get $columns => [id, closed, bouquetId, customerId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1186,6 +1195,10 @@ class $FutureSubscriptionPaymentsTable extends FutureSubscriptionPayments
     if (data.containsKey('closed')) {
       context.handle(_closedMeta,
           closed.isAcceptableOrUnknown(data['closed']!, _closedMeta));
+    }
+    if (data.containsKey('bouquet_id')) {
+      context.handle(_bouquetIdMeta,
+          bouquetId.isAcceptableOrUnknown(data['bouquet_id']!, _bouquetIdMeta));
     }
     if (data.containsKey('customer_id')) {
       context.handle(
@@ -1209,6 +1222,8 @@ class $FutureSubscriptionPaymentsTable extends FutureSubscriptionPayments
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       closed: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}closed'])!,
+      bouquetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}bouquet_id']),
       customerId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}customer_id'])!,
     );
@@ -1224,14 +1239,21 @@ class FutureSubscriptionPayment extends DataClass
     implements Insertable<FutureSubscriptionPayment> {
   final int id;
   final bool closed;
+  final int? bouquetId;
   final int customerId;
   const FutureSubscriptionPayment(
-      {required this.id, required this.closed, required this.customerId});
+      {required this.id,
+      required this.closed,
+      this.bouquetId,
+      required this.customerId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['closed'] = Variable<bool>(closed);
+    if (!nullToAbsent || bouquetId != null) {
+      map['bouquet_id'] = Variable<int>(bouquetId);
+    }
     map['customer_id'] = Variable<int>(customerId);
     return map;
   }
@@ -1240,6 +1262,9 @@ class FutureSubscriptionPayment extends DataClass
     return FutureSubscriptionPaymentsCompanion(
       id: Value(id),
       closed: Value(closed),
+      bouquetId: bouquetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bouquetId),
       customerId: Value(customerId),
     );
   }
@@ -1250,6 +1275,7 @@ class FutureSubscriptionPayment extends DataClass
     return FutureSubscriptionPayment(
       id: serializer.fromJson<int>(json['id']),
       closed: serializer.fromJson<bool>(json['closed']),
+      bouquetId: serializer.fromJson<int?>(json['bouquetId']),
       customerId: serializer.fromJson<int>(json['customerId']),
     );
   }
@@ -1259,15 +1285,20 @@ class FutureSubscriptionPayment extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'closed': serializer.toJson<bool>(closed),
+      'bouquetId': serializer.toJson<int?>(bouquetId),
       'customerId': serializer.toJson<int>(customerId),
     };
   }
 
   FutureSubscriptionPayment copyWith(
-          {int? id, bool? closed, int? customerId}) =>
+          {int? id,
+          bool? closed,
+          Value<int?> bouquetId = const Value.absent(),
+          int? customerId}) =>
       FutureSubscriptionPayment(
         id: id ?? this.id,
         closed: closed ?? this.closed,
+        bouquetId: bouquetId.present ? bouquetId.value : this.bouquetId,
         customerId: customerId ?? this.customerId,
       );
   @override
@@ -1275,19 +1306,21 @@ class FutureSubscriptionPayment extends DataClass
     return (StringBuffer('FutureSubscriptionPayment(')
           ..write('id: $id, ')
           ..write('closed: $closed, ')
+          ..write('bouquetId: $bouquetId, ')
           ..write('customerId: $customerId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, closed, customerId);
+  int get hashCode => Object.hash(id, closed, bouquetId, customerId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FutureSubscriptionPayment &&
           other.id == this.id &&
           other.closed == this.closed &&
+          other.bouquetId == this.bouquetId &&
           other.customerId == this.customerId);
 }
 
@@ -1295,34 +1328,43 @@ class FutureSubscriptionPaymentsCompanion
     extends UpdateCompanion<FutureSubscriptionPayment> {
   final Value<int> id;
   final Value<bool> closed;
+  final Value<int?> bouquetId;
   final Value<int> customerId;
   const FutureSubscriptionPaymentsCompanion({
     this.id = const Value.absent(),
     this.closed = const Value.absent(),
+    this.bouquetId = const Value.absent(),
     this.customerId = const Value.absent(),
   });
   FutureSubscriptionPaymentsCompanion.insert({
     this.id = const Value.absent(),
     this.closed = const Value.absent(),
+    this.bouquetId = const Value.absent(),
     required int customerId,
   }) : customerId = Value(customerId);
   static Insertable<FutureSubscriptionPayment> custom({
     Expression<int>? id,
     Expression<bool>? closed,
+    Expression<int>? bouquetId,
     Expression<int>? customerId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (closed != null) 'closed': closed,
+      if (bouquetId != null) 'bouquet_id': bouquetId,
       if (customerId != null) 'customer_id': customerId,
     });
   }
 
   FutureSubscriptionPaymentsCompanion copyWith(
-      {Value<int>? id, Value<bool>? closed, Value<int>? customerId}) {
+      {Value<int>? id,
+      Value<bool>? closed,
+      Value<int?>? bouquetId,
+      Value<int>? customerId}) {
     return FutureSubscriptionPaymentsCompanion(
       id: id ?? this.id,
       closed: closed ?? this.closed,
+      bouquetId: bouquetId ?? this.bouquetId,
       customerId: customerId ?? this.customerId,
     );
   }
@@ -1336,6 +1378,9 @@ class FutureSubscriptionPaymentsCompanion
     if (closed.present) {
       map['closed'] = Variable<bool>(closed.value);
     }
+    if (bouquetId.present) {
+      map['bouquet_id'] = Variable<int>(bouquetId.value);
+    }
     if (customerId.present) {
       map['customer_id'] = Variable<int>(customerId.value);
     }
@@ -1347,6 +1392,7 @@ class FutureSubscriptionPaymentsCompanion
     return (StringBuffer('FutureSubscriptionPaymentsCompanion(')
           ..write('id: $id, ')
           ..write('closed: $closed, ')
+          ..write('bouquetId: $bouquetId, ')
           ..write('customerId: $customerId')
           ..write(')'))
         .toString();
@@ -1394,6 +1440,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('subscriptions', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('bouquets',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('future_subscription_payments',
+                  kind: UpdateKind.delete),
             ],
           ),
           WritePropagation(

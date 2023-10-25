@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
@@ -38,6 +38,7 @@ class AppDatabase extends _$AppDatabase {
 
         await transaction(() async {
           await _from1To2(from, m);
+          await _from2To3(from, m);
         });
 
         // Assert that the schema is valid after migrations
@@ -57,6 +58,16 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _from1To2(int from, Migrator m) async {
     if (from < 2) {
       await m.createTable(futureSubscriptionPayments);
+    }
+  }
+
+  Future<void> _from2To3(int from, Migrator m) async {
+    if (from < 3) {
+      await futureSubscriptionPayments.deleteAll();
+      await m.addColumn(
+        futureSubscriptionPayments,
+        futureSubscriptionPayments.bouquetId,
+      );
     }
   }
 }

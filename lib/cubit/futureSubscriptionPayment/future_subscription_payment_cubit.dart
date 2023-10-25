@@ -2,10 +2,12 @@ import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
+import 'package:jamanacanal/daos/bouquet_dao.dart';
 import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/daos/future_subscription_payment_dao.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/future_subscription_payment_detail.dart';
+import 'package:jamanacanal/models/future_subscription_payment_input_data.dart';
 
 part 'future_subscription_payment_state.dart';
 
@@ -13,12 +15,14 @@ class FutureSubscriptionPaymentCubit
     extends Cubit<FutureSubscriptionPaymentState> {
   final FutureSubscriptionPaymentsDao _futureSubscriptionPaymentsDao;
   final CustomersDao _customersDao;
+  final BouquetsDao _bouquetsDao;
   final NotificationCubit _notificationCubit;
 
   FutureSubscriptionPaymentCubit(
     this._futureSubscriptionPaymentsDao,
     this._notificationCubit,
     this._customersDao,
+    this._bouquetsDao,
   ) : super(FutureSubscriptionInitial());
 
   Future<void> load() async {
@@ -33,13 +37,16 @@ class FutureSubscriptionPaymentCubit
     load();
   }
 
-  Future<void> addSubscription(int customerId) async {
+  Future<void> addSubscription(
+    FutureSubscriptionPaymentInputData formInputData,
+  ) async {
     try {
       emit(FutureSubscriptionPaymentFormUnderTraintement());
 
       await _futureSubscriptionPaymentsDao
           .addSubscription(FutureSubscriptionPaymentsCompanion(
-        customerId: Value(customerId),
+        customerId: Value(formInputData.customerId),
+        bouquetId: Value(formInputData.bouquetId),
       ));
 
       emit(FutureSubscriptionPaymentTraintementEnded());
@@ -58,6 +65,11 @@ class FutureSubscriptionPaymentCubit
 
   Future<void> loadForm() async {
     final customers = await _customersDao.allCustomers;
-    emit(FutureSubscriptionPaymentFormLoaded(customers: customers));
+    final bouquets = await _bouquetsDao.allBouquets;
+
+    emit(FutureSubscriptionPaymentFormLoaded(
+      customers: customers,
+      bouquets: bouquets,
+    ));
   }
 }

@@ -6,13 +6,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jamanacanal/cubit/futureSubscriptionPayment/future_subscription_payment_cubit.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/models/database.dart';
+import 'package:jamanacanal/utils/functions.dart';
+import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/form_action_buttons.dart';
 import 'package:jamanacanal/widgets/modal_title.dart';
 import 'package:jamanacanal/widgets/notification_widget.dart';
 
+import '../../../models/future_subscription_payment_input_data.dart';
+
 class FormFutureSubscriptionPayment extends StatefulWidget {
   final String formTitle;
-  final ValueChanged<int> onSubmit;
+  final ValueChanged<FutureSubscriptionPaymentInputData> onSubmit;
 
   const FormFutureSubscriptionPayment({
     super.key,
@@ -28,6 +32,7 @@ class FormFutureSubscriptionPayment extends StatefulWidget {
 class _FormFutureSubscriptionPaymentState
     extends State<FormFutureSubscriptionPayment> {
   Customer? selectedCustomer;
+  Bouquet? selectedBouquet;
   StreamSubscription<FutureSubscriptionPaymentState>? subscription;
 
   @override
@@ -47,6 +52,7 @@ class _FormFutureSubscriptionPaymentState
       if (state is FutureSubscriptionPaymentTraintementEnded) {
         setState(() {
           selectedCustomer = null;
+          selectedBouquet = null;
         });
       }
     });
@@ -96,12 +102,25 @@ class _FormFutureSubscriptionPaymentState
                   },
                 ),
                 const SizedBox(height: 10),
+                const Text('Choisir le bouquet'),
+                DropdownButtonFormField<Bouquet>(
+                  decoration: AppInputDecoration(),
+                  value: selectedBouquet,
+                  items: buildBouquetItemForDropwdown(state.bouquets),
+                  onChanged: (bouquet) {
+                    selectedBouquet = bouquet;
+                  },
+                ),
+                const SizedBox(height: 10),
                 const NotificationWidget(),
                 FormActionButtons(
                   isSubmitting: isSubmitting,
                   onSave: () {
-                    if (selectedCustomer != null) {
-                      widget.onSubmit(selectedCustomer!.id);
+                    if (selectedCustomer != null && selectedBouquet != null) {
+                      widget.onSubmit(FutureSubscriptionPaymentInputData(
+                        bouquetId: selectedBouquet!.id,
+                        customerId: selectedCustomer!.id,
+                      ));
                     }
                   },
                 ),

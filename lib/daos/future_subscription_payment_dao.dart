@@ -16,15 +16,18 @@ class FutureSubscriptionPaymentsDao extends DatabaseAccessor<AppDatabase>
 
             select  f.id,
                     c.first_name || ' ' || c.last_name as customer_full_name,
-                    c.phone_number
+                    c.phone_number,
+                    b.name
             from future_subscription_payments f
-            inner join customers c on c.id = f.customer_id;
+            inner join customers c on c.id = f.customer_id
+            inner join bouquets b on b.id = f.bouquet_id;
 
           """).map((row) {
       return FutureSubscriptionPaymentDetail(
         id: row.read<int>("id"),
         customerFullName: row.read<String>("customer_full_name"),
         phoneNumber: row.read<String>("phone_number"),
+        bouquetName: row.read("name"),
       );
     }).get();
   }

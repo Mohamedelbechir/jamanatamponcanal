@@ -18,11 +18,15 @@ final class FutureSubscriptionPaymentTraintementEnded
 final class FutureSubscriptionPaymentFormLoaded
     extends FutureSubscriptionPaymentState {
   final List<Customer> customers;
+  final List<Bouquet> bouquets;
 
-  const FutureSubscriptionPaymentFormLoaded({required this.customers});
+  const FutureSubscriptionPaymentFormLoaded({
+    required this.customers,
+    required this.bouquets,
+  });
 
   @override
-  List<Object?> get props => [customers];
+  List<Object?> get props => [customers, bouquets];
 }
 
 final class FutureSubscriptionLoaded extends FutureSubscriptionPaymentState {
