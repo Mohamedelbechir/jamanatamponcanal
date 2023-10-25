@@ -9,7 +9,6 @@ import 'package:jamanacanal/cubit/futureSubscriptionPayment/future_subscription_
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/pages/futureSubcription/future_subscription_payment_page.dart';
 import 'package:jamanacanal/pages/subscription/subscription_page.dart';
-import 'package:jamanacanal/pages/about/about.dart';
 import 'package:jamanacanal/pages/bouquet/bouquet_page.dart';
 import 'package:jamanacanal/pages/customer/customer.dart';
 import 'package:jamanacanal/notification/notification.dart';

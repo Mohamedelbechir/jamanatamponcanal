@@ -7,6 +7,7 @@ import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
+import 'package:jamanacanal/utils/functions.dart';
 import 'package:jamanacanal/widgets/form_action_buttons.dart';
 import 'package:jamanacanal/widgets/modal_title.dart';
 import '../../../models/subscription_input_data.dart';
@@ -168,7 +169,7 @@ class _FormSubscriptionState extends State<FormSubscription> {
                                   state.subscriptionInputData.bouquetId,
                                 ),
                                 decoration: AppInputDecoration(),
-                                items: _buildBouquetItemForDropwdown(
+                                items: buildBouquetItemForDropwdown(
                                     state.bouquets),
                                 onChanged: (value) {
                                   context
@@ -309,15 +310,6 @@ class _FormSubscriptionState extends State<FormSubscription> {
     if (_isFormValid) {
       widget.onSubmit(subscriptionInputData);
     }
-  }
-
-  _buildBouquetItemForDropwdown(List<Bouquet> bouquets) {
-    return bouquets.map((bouquet) {
-      return DropdownMenuItem<Bouquet>(
-        value: bouquet,
-        child: Text(bouquet.name),
-      );
-    }).toList();
   }
 
   _buildDecoderItemForDropwdown(List<Decoder> decoders) {
