@@ -33,7 +33,8 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
             d.number AS decoder_number,
             c.phone_number,
             d.customer_id,
-            c.first_name || ' ' || c.last_name AS customer_full_name
+            c.first_name || ' ' || c.last_name AS customer_full_name,
+            (SELECT COUNT(*) from future_subscription_payments f WHERE f.customer_id = c.id) as "payment_count"
                    
       FROM subscriptions s
       INNER JOIN bouquets b ON b.id = s.bouquet_id
@@ -48,6 +49,7 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
         id: row.read<int>('id'),
         customerId: row.read<int>('customer_id'),
         paid: row.read<bool>("paid"),
+        paymentCount: row.read<int>("payment_count"),
         bouquetName: row.read<String>("bouquet_name"),
         phoneNumber: row.read<String>("phone_number"),
         customerFullName: row.read<String>('customer_full_name'),
@@ -69,7 +71,8 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
             d.number AS decoder_number,
             c.phone_number,
             d.customer_id,
-            c.first_name || ' ' || c.last_name AS customer_full_name
+            c.first_name || ' ' || c.last_name AS customer_full_name,
+            (SELECT COUNT(*) from future_subscription_payments f WHERE f.customer_id = c.id) as "payment_count"
                    
       FROM subscriptions s
       INNER JOIN bouquets b ON b.id = s.bouquet_id
@@ -84,6 +87,7 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
         id: row.read<int>('id'),
         customerId: row.read<int>('customer_id'),
         paid: row.read<bool>("paid"),
+        paymentCount: row.read<int>("payment_count"),
         bouquetName: row.read<String>("bouquet_name"),
         phoneNumber: row.read<String>("phone_number"),
         customerFullName: row.read<String>('customer_full_name'),
@@ -105,14 +109,15 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
             d.number AS decoder_number,
             c.phone_number,
             d.customer_id,
-            c.first_name || ' ' || c.last_name AS customer_full_name
+            c.first_name || ' ' || c.last_name AS customer_full_name,
+            (SELECT COUNT(*) from future_subscription_payments f WHERE f.customer_id = c.id) as "payment_count"
                    
       FROM subscriptions s
 
       INNER JOIN bouquets b ON b.id = s.bouquet_id
       INNER JOIN decoders d ON d.id = s.decoder_id
       INNER JOIN customers c ON c.id = d.customer_id
-      WHERE s.id = $subscriptionId;
+      WHERE s.id = $subscriptionId
 
       """,
     ).map((row) {
@@ -120,6 +125,7 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
         id: row.read<int>('id'),
         customerId: row.read<int>('customer_id'),
         paid: row.read<bool>("paid"),
+        paymentCount: row.read<int>("payment_count"),
         bouquetName: row.read<String>("bouquet_name"),
         phoneNumber: row.read<String>("phone_number"),
         customerFullName: row.read<String>('customer_full_name'),
@@ -142,8 +148,8 @@ class SubscriptionsDao extends DatabaseAccessor<AppDatabase>
         .getSingle();
   }
 
-  Future<bool> updateSubscription(Subscription subscriptionsDao) {
-    return (update(subscriptions).replace(subscriptionsDao));
+  Future<bool> updateSubscription(Subscription subscription) {
+    return (update(subscriptions).replace(subscription));
   }
 
   Future<int> remove(int subscriptionId) {

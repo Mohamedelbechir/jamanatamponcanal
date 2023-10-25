@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
+import 'package:jamanacanal/cubit/futureSubscriptionPayment/future_subscription_payment_cubit.dart';
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
+import 'package:jamanacanal/pages/futureSubcription/future_subscription_payment_page.dart';
 import 'package:jamanacanal/pages/subscription/subscription_page.dart';
 import 'package:jamanacanal/pages/about/about.dart';
 import 'package:jamanacanal/pages/bouquet/bouquet_page.dart';
@@ -31,9 +33,9 @@ class ApplicationPagesContainer extends StatefulWidget {
 class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
   final _pages = <Widget>[
     const SubscriptionPage(),
+    const FutureSubscriptionPaymentPage(),
     const CustomerPage(),
     const BouquetPage(),
-    const AboutPage()
   ];
 
   int _selectedIndex = 0;
@@ -83,18 +85,31 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
   }
 
   _onItemTapped(int selectedIndex) {
-    if (selectedIndex == 0) {
-      context.read<SubscriptionCubit>().refreshSubscription();
-    }
-    if (selectedIndex == 1) {
-      context.read<CustomerCubit>().loadCustomerDetails();
-    }
-    if (selectedIndex == 2) {
-      context.read<BouquetCubit>().load();
-    }
+    _loadPageData(selectedIndex);
     setState(() {
       _selectedIndex = selectedIndex;
     });
+  }
+
+  void _loadPageData(int selectedIndex) {
+    final pageDataLoaders = <int, VoidCallback>{
+      0: () {
+        context.read<SubscriptionCubit>().refreshSubscription();
+      },
+      1: () {
+        context.read<FutureSubscriptionPaymentCubit>().load();
+      },
+      2: () {
+        context.read<CustomerCubit>().loadCustomerDetails();
+      },
+      3: () {
+        context.read<BouquetCubit>().load();
+      }
+    };
+
+    if (pageDataLoaders.containsKey(selectedIndex)) {
+      pageDataLoaders[selectedIndex]!();
+    }
   }
 
   @override
@@ -116,16 +131,16 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
             label: 'Abonnements',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.attach_money),
+            label: 'Payés non abnt.',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Abonnés',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.business),
             label: 'Bouquets',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.question_mark_sharp),
-            label: 'Apropos',
           ),
         ],
         currentIndex: _selectedIndex,

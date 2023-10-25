@@ -13,6 +13,7 @@ class SubscriptionDetail extends Equatable {
   final String customerFullName;
   final int customerId;
   final bool paid;
+  final int paymentCount;
 
   const SubscriptionDetail({
     required this.id,
@@ -24,19 +25,22 @@ class SubscriptionDetail extends Equatable {
     required this.decoderNumber,
     required this.customerFullName,
     required this.paid,
+    required this.paymentCount,
   });
   bool get hasPhoneNumber => phoneNumber != null && phoneNumber != "";
+  bool get hasPayment => paymentCount > 0;
   @override
   List<Object?> get props => [
         id,
         customerId,
-        startDate,
-        endDate,
+        customerFullName,
         bouquetName,
         decoderNumber,
-        customerFullName,
-        paid,
         phoneNumber,
+        paymentCount,
+        paid,
+        startDate,
+        endDate,
       ];
 
   Map<String, dynamic> toMap() {
@@ -50,6 +54,7 @@ class SubscriptionDetail extends Equatable {
       'customerFullName': customerFullName,
       'customerId': customerId,
       'paid': paid,
+      'paymentCount': paymentCount,
     };
   }
 
@@ -64,6 +69,7 @@ class SubscriptionDetail extends Equatable {
       customerFullName: map['customerFullName'] as String,
       customerId: map['customerId'] as int,
       paid: map['paid'] as bool,
+      paymentCount: map['paymentCount'] as int,
     );
   }
 

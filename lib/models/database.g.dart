@@ -1133,18 +1133,245 @@ class SubscriptionsCompanion extends UpdateCompanion<Subscription> {
   }
 }
 
+class $FutureSubscriptionPaymentsTable extends FutureSubscriptionPayments
+    with
+        TableInfo<$FutureSubscriptionPaymentsTable, FutureSubscriptionPayment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FutureSubscriptionPaymentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _closedMeta = const VerificationMeta('closed');
+  @override
+  late final GeneratedColumn<bool> closed = GeneratedColumn<bool>(
+      'closed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("closed" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _customerIdMeta =
+      const VerificationMeta('customerId');
+  @override
+  late final GeneratedColumn<int> customerId = GeneratedColumn<int>(
+      'customer_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES customers (id) ON DELETE CASCADE'));
+  @override
+  List<GeneratedColumn> get $columns => [id, closed, customerId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'future_subscription_payments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<FutureSubscriptionPayment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('closed')) {
+      context.handle(_closedMeta,
+          closed.isAcceptableOrUnknown(data['closed']!, _closedMeta));
+    }
+    if (data.containsKey('customer_id')) {
+      context.handle(
+          _customerIdMeta,
+          customerId.isAcceptableOrUnknown(
+              data['customer_id']!, _customerIdMeta));
+    } else if (isInserting) {
+      context.missing(_customerIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FutureSubscriptionPayment map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FutureSubscriptionPayment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      closed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}closed'])!,
+      customerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}customer_id'])!,
+    );
+  }
+
+  @override
+  $FutureSubscriptionPaymentsTable createAlias(String alias) {
+    return $FutureSubscriptionPaymentsTable(attachedDatabase, alias);
+  }
+}
+
+class FutureSubscriptionPayment extends DataClass
+    implements Insertable<FutureSubscriptionPayment> {
+  final int id;
+  final bool closed;
+  final int customerId;
+  const FutureSubscriptionPayment(
+      {required this.id, required this.closed, required this.customerId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['closed'] = Variable<bool>(closed);
+    map['customer_id'] = Variable<int>(customerId);
+    return map;
+  }
+
+  FutureSubscriptionPaymentsCompanion toCompanion(bool nullToAbsent) {
+    return FutureSubscriptionPaymentsCompanion(
+      id: Value(id),
+      closed: Value(closed),
+      customerId: Value(customerId),
+    );
+  }
+
+  factory FutureSubscriptionPayment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FutureSubscriptionPayment(
+      id: serializer.fromJson<int>(json['id']),
+      closed: serializer.fromJson<bool>(json['closed']),
+      customerId: serializer.fromJson<int>(json['customerId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'closed': serializer.toJson<bool>(closed),
+      'customerId': serializer.toJson<int>(customerId),
+    };
+  }
+
+  FutureSubscriptionPayment copyWith(
+          {int? id, bool? closed, int? customerId}) =>
+      FutureSubscriptionPayment(
+        id: id ?? this.id,
+        closed: closed ?? this.closed,
+        customerId: customerId ?? this.customerId,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('FutureSubscriptionPayment(')
+          ..write('id: $id, ')
+          ..write('closed: $closed, ')
+          ..write('customerId: $customerId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, closed, customerId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FutureSubscriptionPayment &&
+          other.id == this.id &&
+          other.closed == this.closed &&
+          other.customerId == this.customerId);
+}
+
+class FutureSubscriptionPaymentsCompanion
+    extends UpdateCompanion<FutureSubscriptionPayment> {
+  final Value<int> id;
+  final Value<bool> closed;
+  final Value<int> customerId;
+  const FutureSubscriptionPaymentsCompanion({
+    this.id = const Value.absent(),
+    this.closed = const Value.absent(),
+    this.customerId = const Value.absent(),
+  });
+  FutureSubscriptionPaymentsCompanion.insert({
+    this.id = const Value.absent(),
+    this.closed = const Value.absent(),
+    required int customerId,
+  }) : customerId = Value(customerId);
+  static Insertable<FutureSubscriptionPayment> custom({
+    Expression<int>? id,
+    Expression<bool>? closed,
+    Expression<int>? customerId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (closed != null) 'closed': closed,
+      if (customerId != null) 'customer_id': customerId,
+    });
+  }
+
+  FutureSubscriptionPaymentsCompanion copyWith(
+      {Value<int>? id, Value<bool>? closed, Value<int>? customerId}) {
+    return FutureSubscriptionPaymentsCompanion(
+      id: id ?? this.id,
+      closed: closed ?? this.closed,
+      customerId: customerId ?? this.customerId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (closed.present) {
+      map['closed'] = Variable<bool>(closed.value);
+    }
+    if (customerId.present) {
+      map['customer_id'] = Variable<int>(customerId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FutureSubscriptionPaymentsCompanion(')
+          ..write('id: $id, ')
+          ..write('closed: $closed, ')
+          ..write('customerId: $customerId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   late final $BouquetsTable bouquets = $BouquetsTable(this);
   late final $CustomersTable customers = $CustomersTable(this);
   late final $DecodersTable decoders = $DecodersTable(this);
   late final $SubscriptionsTable subscriptions = $SubscriptionsTable(this);
+  late final $FutureSubscriptionPaymentsTable futureSubscriptionPayments =
+      $FutureSubscriptionPaymentsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [bouquets, customers, decoders, subscriptions];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        bouquets,
+        customers,
+        decoders,
+        subscriptions,
+        futureSubscriptionPayments
+      ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
@@ -1167,6 +1394,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('subscriptions', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('customers',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('future_subscription_payments',
+                  kind: UpdateKind.delete),
             ],
           ),
         ],
