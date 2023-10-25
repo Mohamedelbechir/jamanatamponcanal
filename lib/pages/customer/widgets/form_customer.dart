@@ -344,7 +344,9 @@ class _FormCustomerState extends State<FormCustomer> {
   }
 
   RemovableTag _buildRemovableTagForCustomerNumber(
-      String customerNumber, CustomerInputData customerInputData) {
+    String customerNumber,
+    CustomerInputData customerInputData,
+  ) {
     return RemovableTag(
       text: customerNumber,
       onTapRemove: () {

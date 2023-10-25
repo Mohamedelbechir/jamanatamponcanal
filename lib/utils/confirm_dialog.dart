@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-Future<dynamic> suppressDialog(
+Future<dynamic> confirmDialog(
   BuildContext context, {
   required String title,
   required String message,
+  MaterialColor primaryColor = Colors.red,
   required VoidCallback onComfirm,
 }) {
   return showDialog(
@@ -21,7 +22,7 @@ Future<dynamic> suppressDialog(
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: primaryColor,
             ),
             onPressed: () {
               onComfirm();

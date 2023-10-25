@@ -7,7 +7,7 @@ import 'package:jamanacanal/models/customer_detail.dart';
 import 'package:jamanacanal/pages/customer/widgets/customer_number_widget.dart';
 import 'package:jamanacanal/pages/customer/widgets/form_customer.dart';
 import 'package:jamanacanal/pages/customer/widgets/phone_number_widget.dart';
-import 'package:jamanacanal/utils/suppression_dialog.dart';
+import 'package:jamanacanal/utils/confirm_dialog.dart';
 import 'package:jamanacanal/utils/utils_values.dart';
 import 'package:jamanacanal/widgets/bold_tag.dart';
 import 'package:jamanacanal/widgets/customer_full_name.dart';
@@ -66,10 +66,11 @@ class _CustomerTileState extends State<CustomerTile> {
           SlidableAction(
             flex: 1,
             onPressed: (_) {
-              suppressDialog(
+              confirmDialog(
                 context,
                 title: "Supprimer abonné",
                 message: "Etes-vous sûr de vouloir supprimer cet abonné ?",
+                primaryColor: Colors.red,
                 onComfirm: () {
                   context.read<CustomerCubit>().remove(widget.customer.id);
                 },
