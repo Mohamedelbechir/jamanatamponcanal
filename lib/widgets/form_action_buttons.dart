@@ -19,7 +19,7 @@ class FormActionButtons extends StatelessWidget {
         OutlinedButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text(
-            'Annuler',
+            'Retourner',
             style: TextStyle(color: Colors.black),
           ),
         ),
