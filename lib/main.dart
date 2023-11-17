@@ -12,6 +12,7 @@ import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/daos/decoder_dao.dart';
 import 'package:jamanacanal/daos/subscription_dao.dart';
 import 'package:jamanacanal/daos/future_subscription_payment_dao.dart';
+import 'package:jamanacanal/jobs/application_job.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/pages/application_pages_container.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -24,6 +25,7 @@ Future<void> main() async {
   final notificationAppLaunchDetails =
       await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
 
+  await JobManager().init();
   final database = AppDatabase();
 
   runApp(Application(database, notificationAppLaunchDetails));
