@@ -130,18 +130,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     try {
       emit(SubscriptionFormUnderTraitement());
 
-      final subscriptionId = await _subscriptionsDao
-          .addSubscription(subscriptionInputData.companion);
-
       await Future.delayed(const Duration(milliseconds: 500));
 
       emit(SubscriptionFormTraitementEnded());
-
-      final addSubscription =
-          await _subscriptionsDao.findSubscriptionDetail(subscriptionId);
-      safeTry(() {
-        zonedScheduleNotification(addSubscription!);
-      });
 
       _notificationCubit.push(
         NotificationType.success,
@@ -179,12 +170,6 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
 
       await Future.delayed(const Duration(milliseconds: 500));
       emit(SubscriptionFormTraitementEnded());
-
-      final addSubscription =
-          await _subscriptionsDao.findSubscriptionDetail(subscription.id);
-      safeTry(() {
-        zonedScheduleNotification(addSubscription!);
-      });
 
       _notificationCubit.push(
         NotificationType.success,
