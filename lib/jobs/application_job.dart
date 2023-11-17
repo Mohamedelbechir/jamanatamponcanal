@@ -72,7 +72,7 @@ Future<void> assessPlanificationReset() async {
   final prefs = await SharedPreferences.getInstance();
   final resetAllPlanification = prefs.getBool(resetAllPlanificationKey);
   if (resetAllPlanification == null || resetAllPlanification) {
-    await flutterLocalNotificationsPlugin.cancelAll();
+    await removeAllNotification();
     await prefs.setBool(resetAllPlanificationKey, false);
   }
 }
