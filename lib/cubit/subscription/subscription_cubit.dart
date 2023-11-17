@@ -130,6 +130,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     try {
       emit(SubscriptionFormUnderTraitement());
 
+      await _subscriptionsDao.addSubscription(subscriptionInputData.companion);
       await Future.delayed(const Duration(milliseconds: 500));
 
       emit(SubscriptionFormTraitementEnded());
