@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String callCustomerId = "id_call_customer";
 const String notificationSound = "notification";
+const timeOfNotification = TimeOfDay(hour: 9, minute: 30);
 
 const initializationSettingsAndroid =
     AndroidInitializationSettings('ic_launcher');
@@ -103,50 +104,55 @@ Future<void> configureLocalTimeZone() async {
 }
 
 Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
-  await flutterLocalNotificationsPlugin.zonedSchedule(
-    subscription.id,
-    'Abonnement CANAL+',
-    "Merci de renouveler l'abonn. de ${subscription.customerFullName}",
-    _notificateDate(subscription.endDate),
-    const NotificationDetails(
-        android: AndroidNotificationDetails(
-      'jamanacanal_channel_id',
-      'jamanacanal_channel_name',
-      channelDescription: 'jamana canal',
-      priority: Priority.high,
-      importance: Importance.high,
-      playSound: true,
-      visibility: NotificationVisibility.public,
-      sound: RawResourceAndroidNotificationSound(notificationSound),
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          callCustomerId,
-          'Passer un appel',
-          showsUserInterface: true,
-        ),
-      ],
-    )),
-    payload: subscription.toJson(),
-    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    uiLocalNotificationDateInterpretation:
-        UILocalNotificationDateInterpretation.absoluteTime,
-  );
+  try {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      subscription.id,
+      'Abonnement CANAL+',
+      "Merci de renouveler l'abonn. de ${subscription.customerFullName}",
+      notificationDate(),
+      const NotificationDetails(
+          android: AndroidNotificationDetails(
+        'jamanacanal_channel_id',
+        'jamanacanal_channel_name',
+        channelDescription: 'jamana canal',
+        priority: Priority.high,
+        importance: Importance.high,
+        playSound: true,
+        visibility: NotificationVisibility.public,
+        sound: RawResourceAndroidNotificationSound(notificationSound),
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction(
+            callCustomerId,
+            'Passer un appel',
+            showsUserInterface: true,
+          ),
+        ],
+      )),
+      payload: subscription.toJson(),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  } catch (e) {
+    debugPrint(e.toString());
+  }
 }
 
 Future<void> removeNotification(int subscriptionId) async {
   await flutterLocalNotificationsPlugin.cancel(subscriptionId);
 }
 
-tz.TZDateTime _notificateDate(DateTime date) {
+Future<void> removeAllNotification() async {
+  await flutterLocalNotificationsPlugin.cancelAll();
+}
+
+tz.TZDateTime notificationDate() {
+  configureLocalTimeZone();
   return tz.TZDateTime.from(
-    DateTime(
-        date.year,
-        date.month,
-        date.day - 2,
-        9, // heure
-        30, // minutes
-        30 // seconde
-        ),
+    DateUtils.dateOnly(DateTime.now()).add(Duration(
+      hours: timeOfNotification.hour,
+      minutes: timeOfNotification.minute,
+    )),
     tz.local,
   );
 }
