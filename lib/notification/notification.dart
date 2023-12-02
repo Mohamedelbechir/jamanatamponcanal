@@ -138,6 +138,37 @@ Future<void> zonedScheduleNotification(SubscriptionDetail subscription) async {
   }
 }
 
+Future<void> showNotification(SubscriptionDetail subscription) async {
+  try {
+    await flutterLocalNotificationsPlugin.show(
+      subscription.id,
+      'Abonnement CANAL+',
+      "Merci de renouveler l'abonn. de ${subscription.customerFullName}",
+      const NotificationDetails(
+          android: AndroidNotificationDetails(
+        'jamanacanal_channel_id',
+        'jamanacanal_channel_name',
+        channelDescription: 'jamana canal',
+        priority: Priority.high,
+        importance: Importance.high,
+        playSound: true,
+        visibility: NotificationVisibility.public,
+        sound: RawResourceAndroidNotificationSound(notificationSound),
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction(
+            callCustomerId,
+            'Passer un appel',
+            showsUserInterface: true,
+          ),
+        ],
+      )),
+      payload: subscription.toJson(),
+    );
+  } catch (e) {
+    debugPrint(e.toString());
+  }
+}
+
 Future<void> removeNotification(int subscriptionId) async {
   await flutterLocalNotificationsPlugin.cancel(subscriptionId);
 }

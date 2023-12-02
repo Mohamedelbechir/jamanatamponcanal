@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jamanacanal/cubit/bouquet/bouquet_cubit.dart';
 import 'package:jamanacanal/cubit/customer/customer_cubit.dart';
 import 'package:jamanacanal/cubit/futureSubscriptionPayment/future_subscription_payment_cubit.dart';
+import 'package:jamanacanal/cubit/licenceForm/licence_form_cubit.dart';
+import 'package:jamanacanal/cubit/licenceVerification/licence_verification_cubit.dart';
 import 'package:jamanacanal/cubit/notification/notification_cubit.dart';
 import 'package:jamanacanal/cubit/subcriptionFilter/subscription_filter_cubit.dart';
 import 'package:jamanacanal/cubit/subscription/subscription_cubit.dart';
@@ -12,11 +15,15 @@ import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/daos/decoder_dao.dart';
 import 'package:jamanacanal/daos/subscription_dao.dart';
 import 'package:jamanacanal/daos/future_subscription_payment_dao.dart';
+import 'package:jamanacanal/firebase_options.dart';
 import 'package:jamanacanal/jobs/application_job.dart';
 import 'package:jamanacanal/models/database.dart';
+import 'package:jamanacanal/models/licence_manager.dart';
 import 'package:jamanacanal/pages/application_pages_container.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:jamanacanal/notification/notification.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:jamanacanal/pages/licence/licence_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +35,9 @@ Future<void> main() async {
   await JobManager().init();
   final database = AppDatabase();
 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(Application(database, notificationAppLaunchDetails));
 }
 
@@ -52,6 +62,8 @@ class _ApplicationState extends State<Application> {
     super.dispose();
   }
 
+  final _licenceManager =
+      LicenceManager(firebaseFirestore: FirebaseFirestore.instance);
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -109,9 +121,35 @@ class _ApplicationState extends State<Application> {
               context.read(),
             ),
           ),
+          BlocProvider(
+            create: (context) => LicenceVerificationCubit(
+              _licenceManager,
+            )..load(),
+          ),
+          BlocProvider(
+            create: (context) => LicenceFormCubit(
+              context.read(),
+              context.read(),
+              licenceManager: _licenceManager,
+            ),
+          ),
         ],
-        child: ApplicationPagesContainer(
-          notificationAppLaunchDetails: widget.notificationAppLaunchDetails,
+        child: BlocBuilder<LicenceVerificationCubit, LicenceVerificationState>(
+          builder: (context, state) {
+            if (state is VerifiedLicence) {
+              return ApplicationPagesContainer(
+                notificationAppLaunchDetails:
+                    widget.notificationAppLaunchDetails,
+              );
+            }
+            if (state is NoLicence) {
+              return const LicencePage();
+            }
+            return const Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(child: CircularProgressIndicator()),
+            );
+          },
         ),
       ),
     );

@@ -21,7 +21,7 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     switch (task) {
       case notifcationPlanificatorJobKey:
-        handleD2Planification();
+        await handleD2Planification();
         break;
     }
     return Future.value(true);
@@ -48,48 +48,53 @@ class JobManager {
 }
 
 Future<void> handleD2Planification() async {
-  await assessPlanificationReset();
+  var dayNotificationExecuted = await isDayNotificationExecuted(DateTime.now());
 
-  final prendingNotifications =
-      await flutterLocalNotificationsPlugin.pendingNotificationRequests();
-
-  final pendingNotificationIds = prendingNotifications.map((p) => p.id);
-
-  if (!notificationClosureTimeExceded()) {
-    var subscriptions = await subscriptionsForD2();
-    final subscriptionsToPlan = subscriptions.where((subcriptionForD2) {
-      return !pendingNotificationIds.contains(subcriptionForD2.id);
-    });
-
-    for (var subcriptionToPlan in subscriptionsToPlan) {
-      await zonedScheduleNotification(subcriptionToPlan);
-    }
-  }
-}
-
-Future<void> assessPlanificationReset() async {
-  const resetAllPlanificationKey = "resetAllPlanificationKey";
-  final prefs = await SharedPreferences.getInstance();
-  final resetAllPlanification = prefs.getBool(resetAllPlanificationKey);
-  if (resetAllPlanification == null || resetAllPlanification) {
+  var subscriptions = await subscriptionsForD2();
+  if (notificationClosureTimeExceded() &&
+      !dayNotificationExecuted &&
+      subscriptions.isNotEmpty) {
     await removeAllNotification();
-    await prefs.setBool(resetAllPlanificationKey, false);
+
+    for (var subcriptionToPlan in subscriptions) {
+      await Future.delayed(const Duration(seconds: 2));
+      await showNotification(subcriptionToPlan);
+    }
+    await markDayAsNotified(DateTime.now());
   }
 }
 
-Future<Iterable<SubscriptionDetail>> subscriptionsForD2() async {
+const dayNotificationKey = "dayNotificationKey";
+Future<void> markDayAsNotified(DateTime day) async {
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.setInt(
+    dayNotificationKey,
+    DateUtils.dateOnly(day).millisecondsSinceEpoch,
+  );
+}
+
+Future<bool> isDayNotificationExecuted(DateTime day) async {
+  final prefs = await SharedPreferences.getInstance();
+
+  final savedDaySinceApprochValue = prefs.getInt(dayNotificationKey);
+  var givenDayMillisecondsSinceEpoch =
+      DateUtils.dateOnly(day).millisecondsSinceEpoch;
+  return savedDaySinceApprochValue == givenDayMillisecondsSinceEpoch;
+}
+
+Future<List<SubscriptionDetail>> subscriptionsForD2() async {
   final subscriptions = await subscriptionDao.allActiveSubscriptionDetails();
   return subscriptions.where((element) {
     var d2Deadline = element.endDate.add(const Duration(days: -2));
     return DateUtils.dateOnly(d2Deadline) == DateUtils.dateOnly(DateTime.now());
-  });
+  }).toList();
 }
 
 bool notificationClosureTimeExceded() {
   final currentTime = TimeOfDay.now();
-  const gap = 15;
 
   return currentTime.hour > timeOfNotification.hour ||
       currentTime.hour == timeOfNotification.hour &&
-          currentTime.minute + gap >= currentTime.minute;
+          currentTime.minute >= currentTime.minute;
 }
