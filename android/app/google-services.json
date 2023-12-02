@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "930921923522",
+    "project_id": "jamanacanal",
+    "storage_bucket": "jamanacanal.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:930921923522:android:0cdde7a0f64d7860dd0c5b",
+        "android_client_info": {
+          "package_name": "com.example.jamanacanal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4g58Sw_2b9Nta0rdoVY6R103JVnGOQXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
