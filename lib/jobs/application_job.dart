@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:jamanacanal/daos/subscription_dao.dart';
 import 'package:jamanacanal/firebase_options.dart';
-import 'package:jamanacanal/log/logging.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/subscription_detail.dart';
 import 'package:jamanacanal/notification/notification.dart';
@@ -27,8 +26,6 @@ void callbackDispatcher() {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
-        /*  final applicationLogger = ApplicationLogger();
-        await applicationLogger.log("Job preparing to execute task $task"); */
         await handleD2Planification();
         break;
     }
@@ -39,10 +36,7 @@ void callbackDispatcher() {
 class JobManager {
   Future<void> init() async {
     try {
-      await Workmanager().initialize(
-        callbackDispatcher,
-        // isInDebugMode: true,
-      );
+      await Workmanager().initialize(callbackDispatcher);
 
       await Workmanager().registerPeriodicTask(
         notifcationPlanificatorJobName,
@@ -57,12 +51,8 @@ class JobManager {
 
 Future<void> handleD2Planification() async {
   var dayNotificationExecuted = await isDayNotificationExecuted(DateTime.now());
-  /* final applicationLogger = ApplicationLogger();
-  await applicationLogger
-      .log("Daly execution status is $dayNotificationExecuted"); */
+
   var subscriptions = await subscriptionsForD2();
-/*   await applicationLogger
-      .log("Number of subscriptionsForD2 is ${subscriptions.length}"); */
 
   if (notificationClosureTimeExceded() &&
       !dayNotificationExecuted &&
