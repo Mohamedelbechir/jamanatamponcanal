@@ -26,8 +26,9 @@ class LicenceManager {
   Future<bool> isValidLicenceKey(String key) async {
     final result = await _findLicence(key);
     if (result == null) return false;
-    var isUsed = result.data()["used"];
-    return !isUsed;
+    final isUsed = result.data()["used"];
+    final isSpecial = result.data()["special"];
+    return !isUsed || isSpecial == true;
   }
 
   Future<void> useLicence(String key) async {

@@ -15,7 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String callCustomerId = "id_call_customer";
 const String notificationSound = "notification";
-const timeOfNotification = TimeOfDay(hour: 9, minute: 30);
+const timeOfNotification = TimeOfDay(hour: 8, minute: 30);
 
 const initializationSettingsAndroid =
     AndroidInitializationSettings('ic_launcher');

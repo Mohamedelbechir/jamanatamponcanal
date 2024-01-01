@@ -12,7 +12,6 @@ import 'package:jamanacanal/pages/subscription/subscription_page.dart';
 import 'package:jamanacanal/pages/bouquet/bouquet_page.dart';
 import 'package:jamanacanal/pages/customer/customer.dart';
 import 'package:jamanacanal/notification/notification.dart';
-
 import '../widgets/app_title.dart';
 
 enum AppPage { home, bouquet, about }

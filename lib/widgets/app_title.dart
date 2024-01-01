@@ -11,7 +11,7 @@ class AppTitle extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          "CANAL+",
+          "SUIVI+",
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,

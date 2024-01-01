@@ -4,11 +4,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:jamanacanal/daos/subscription_dao.dart';
+import 'package:jamanacanal/firebase_options.dart';
+import 'package:jamanacanal/log/logging.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/subscription_detail.dart';
 import 'package:jamanacanal/notification/notification.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 const notifcationPlanificatorJobKey = "notifcation_planificator_job_key";
 const notifcationPlanificatorJobName = "notifcation_planificator_job_name";
@@ -21,6 +24,11 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     switch (task) {
       case notifcationPlanificatorJobKey:
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        /*  final applicationLogger = ApplicationLogger();
+        await applicationLogger.log("Job preparing to execute task $task"); */
         await handleD2Planification();
         break;
     }
@@ -49,8 +57,13 @@ class JobManager {
 
 Future<void> handleD2Planification() async {
   var dayNotificationExecuted = await isDayNotificationExecuted(DateTime.now());
-
+  /* final applicationLogger = ApplicationLogger();
+  await applicationLogger
+      .log("Daly execution status is $dayNotificationExecuted"); */
   var subscriptions = await subscriptionsForD2();
+/*   await applicationLogger
+      .log("Number of subscriptionsForD2 is ${subscriptions.length}"); */
+
   if (notificationClosureTimeExceded() &&
       !dayNotificationExecuted &&
       subscriptions.isNotEmpty) {
@@ -96,5 +109,5 @@ bool notificationClosureTimeExceded() {
 
   return currentTime.hour > timeOfNotification.hour ||
       currentTime.hour == timeOfNotification.hour &&
-          currentTime.minute >= currentTime.minute;
+          currentTime.minute >= timeOfNotification.minute;
 }
