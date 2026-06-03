@@ -39,9 +39,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <service
-            android:name="com.dexterous.flutterlocalnotifications.ForegroundService"        
+            android:name="com.dexterous.flutterlocalnotifications.ForegroundService"
             android:exported="false"
-            android:stopWithTask="false"/>
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="local_notifications" />
+        </service>
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
@@ -66,4 +71,5 @@
       </intent>
     </queries>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 </manifest>

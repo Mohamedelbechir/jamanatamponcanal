@@ -13,6 +13,7 @@ import '../../../widgets/form_action_buttons.dart';
 import 'form_first_name.dart';
 import 'form_last_name.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:flutter_native_contact_picker/model/contact.dart';
 
 class FormCustomer extends StatefulWidget {
   const FormCustomer(
@@ -223,7 +224,7 @@ class _FormCustomerState extends State<FormCustomer> {
     );
   }
 
-  final _contactPicker = FlutterContactPicker();
+  final _contactPicker = FlutterNativeContactPicker();
 
   Column _buildPhoneNumber(CustomerInputData customerInputData) {
     return Column(
