@@ -80,6 +80,9 @@ class DataSyncService {
       debugPrint('$stackTrace');
     } finally {
       _syncInProgress = false;
+      if (await _hasPendingLocalChanges()) {
+        unawaited(syncIfNeeded());
+      }
     }
   }
 
@@ -88,20 +91,12 @@ class DataSyncService {
         _firestore.collection(_backupCollection).doc(backupDocumentId);
     final remoteSnapshot = await backupRef.get();
 
-    final isPending = await _syncStateStore.isPending();
     final lastSyncedAt = await _syncStateStore.getLastSyncedAt();
     final remoteUpdatedAt = _readRemoteUpdatedAt(remoteSnapshot.data());
+    final hasLocalChanges = await _hasPendingLocalChanges();
 
-    if (isPending) {
-      final now = DateTime.now();
-      final snapshot = await _backupRepository.exportSnapshot();
-      await backupRef.set({
-        ...snapshot,
-        'licenceKey': licenceKey,
-        'schemaVersion': _schemaVersion,
-        'updatedAt': Timestamp.fromDate(now),
-      });
-      await _syncStateStore.markSynced(now);
+    if (hasLocalChanges || !remoteSnapshot.exists) {
+      await _uploadSnapshot(backupRef, licenceKey);
       return false;
     }
 
@@ -114,6 +109,31 @@ class DataSyncService {
     }
 
     return false;
+  }
+
+  Future<void> _uploadSnapshot(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    String licenceKey,
+  ) async {
+    final now = DateTime.now();
+    final snapshot = await _backupRepository.exportSnapshot();
+    await backupRef.set({
+      ...snapshot,
+      'licenceKey': licenceKey,
+      'schemaVersion': _schemaVersion,
+      'updatedAt': Timestamp.fromDate(now),
+    });
+    await _syncStateStore.markSynced(now);
+  }
+
+  Future<bool> _hasPendingLocalChanges() async {
+    if (await _syncStateStore.isPending()) return true;
+
+    final localUpdatedAt = await _syncStateStore.getLocalUpdatedAt();
+    final lastSyncedAt = await _syncStateStore.getLastSyncedAt();
+    if (localUpdatedAt == null) return false;
+
+    return lastSyncedAt == null || localUpdatedAt.isAfter(lastSyncedAt);
   }
 
   DateTime? _readRemoteUpdatedAt(Map<String, dynamic>? data) {
@@ -129,6 +149,8 @@ class DataSyncService {
     if (connectivityResult.contains(ConnectivityResult.none)) {
       return false;
     }
+
+    // connectivity_plus can report wifi/mobile while offline; probe if possible.
     return _connectivityChecker.asConnection();
   }
 

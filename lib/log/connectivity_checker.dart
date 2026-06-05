@@ -1,14 +1,20 @@
 import 'dart:io';
 
 class ConnectivityChecker {
+  static const _probeHosts = [
+    'firestore.googleapis.com',
+    'www.google.com',
+  ];
+
   Future<bool> asConnection() async {
-    bool hasConnection = false;
-    try {
-      final result = await InternetAddress.lookup('www.google.com');
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        hasConnection = true;
-      }
-    } on SocketException catch (_) {}
-    return hasConnection;
+    for (final host in _probeHosts) {
+      try {
+        final result = await InternetAddress.lookup(host);
+        if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+          return true;
+        }
+      } on SocketException catch (_) {}
+    }
+    return false;
   }
 }
