@@ -51,10 +51,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC4g58Sw_2b9Nta0rdoVY6R103JVnGOQXU',
-    appId: '1:930921923522:android:0cdde7a0f64d7860dd0c5b',
+    appId: '1:930921923522:android:638ef1dd6aa8e6badd0c5b',
     messagingSenderId: '930921923522',
     projectId: 'jamanacanal',
-    storageBucket: 'jamanacanal.appspot.com',
+    storageBucket: 'jamanacanal.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '930921923522',
     projectId: 'jamanacanal',
     storageBucket: 'jamanacanal.appspot.com',
-    iosBundleId: 'com.example.jamanacanal',
+    iosBundleId: 'com.jamanatamponcanal',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -72,6 +72,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '930921923522',
     projectId: 'jamanacanal',
     storageBucket: 'jamanacanal.appspot.com',
-    iosBundleId: 'com.example.jamanacanal.RunnerTests',
+    iosBundleId: 'com.jamanatamponcanal.RunnerTests',
   );
 }
