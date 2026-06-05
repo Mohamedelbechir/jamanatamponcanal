@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const appLicenceKey = "appLicenceKey";
+const appLicenceKeyValue = "appLicenceKeyValue";
 
 class LicenceManager {
   String collectionPath = "licences";
@@ -38,11 +39,28 @@ class LicenceManager {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(appLicenceKey, true);
+      await prefs.setString(appLicenceKeyValue, key.trim());
     }
   }
 
   Future<bool> isLicenced() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(appLicenceKey) == true;
+  }
+
+  Future<String?> getLicenceKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(appLicenceKeyValue);
+  }
+
+  /// One backup document per licence key in Firestore `backups/{licenceKey}`.
+  Future<String?> getBackupDocumentId() async {
+    final key = await getLicenceKey();
+    if (key == null || key.isEmpty) return null;
+    return backupDocumentIdFor(key);
+  }
+
+  static String backupDocumentIdFor(String licenceKey) {
+    return licenceKey.trim().replaceAll('/', '_');
   }
 }

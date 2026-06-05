@@ -8,6 +8,7 @@ import 'package:jamanacanal/daos/decoder_dao.dart';
 import 'package:jamanacanal/models/customer_detail.dart';
 import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/models/database.dart';
+import 'package:jamanacanal/sync/data_sync_service.dart';
 
 import 'customer_input_data.dart';
 
@@ -19,6 +20,7 @@ class CustomerCubit extends Cubit<CustomerState> {
   final NotificationCubit _notificationCubit;
   final SubscriptionCubit _subscriptionCubit;
   final BouquetCubit _bouquetCubit;
+  final DataSyncService _dataSyncService;
 
   CustomerCubit(
     this._customersDao,
@@ -26,6 +28,7 @@ class CustomerCubit extends Cubit<CustomerState> {
     this._subscriptionCubit,
     this._bouquetCubit,
     this._notificationCubit,
+    this._dataSyncService,
   ) : super(CustomerInitial());
 
   Future<void> loadCustomerDetails() async {
@@ -85,6 +88,7 @@ class CustomerCubit extends Cubit<CustomerState> {
       emit(CustomerFormTraitementEnded());
       await loadCustomerDetails();
       loadForm();
+      await _dataSyncService.onLocalDataChanged();
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -130,6 +134,7 @@ class CustomerCubit extends Cubit<CustomerState> {
 
       await loadCustomerDetails();
       loadEditingForm(customerInputData.id!);
+      await _dataSyncService.onLocalDataChanged();
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -191,5 +196,6 @@ class CustomerCubit extends Cubit<CustomerState> {
     loadCustomerDetails();
     _subscriptionCubit.refreshSubscription();
     _bouquetCubit.load();
+    await _dataSyncService.onLocalDataChanged();
   }
 }

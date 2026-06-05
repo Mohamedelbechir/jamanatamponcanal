@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:jamanacanal/pages/subscription/subscription_page.dart';
 import 'package:jamanacanal/pages/bouquet/bouquet_page.dart';
 import 'package:jamanacanal/pages/customer/customer.dart';
 import 'package:jamanacanal/notification/notification.dart';
+import 'package:jamanacanal/sync/data_sync_service.dart';
 import '../widgets/app_title.dart';
 
 enum AppPage { home, bouquet, about }
@@ -20,15 +22,18 @@ class ApplicationPagesContainer extends StatefulWidget {
   const ApplicationPagesContainer({
     super.key,
     required this.notificationAppLaunchDetails,
+    required this.dataSyncService,
   });
   final NotificationAppLaunchDetails? notificationAppLaunchDetails;
+  final DataSyncService dataSyncService;
 
   @override
   State<ApplicationPagesContainer> createState() =>
       _ApplicationPagesContainerState();
 }
 
-class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
+class _ApplicationPagesContainerState extends State<ApplicationPagesContainer>
+    with WidgetsBindingObserver {
   final _pages = <Widget>[
     const SubscriptionPage(),
     const FutureSubscriptionPaymentPage(),
@@ -37,10 +42,17 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
   ];
 
   int _selectedIndex = 0;
+  StreamSubscription<void>? _syncCompletedSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.dataSyncService.startListening();
+    _syncCompletedSubscription =
+        widget.dataSyncService.onSyncCompleted.listen((_) {
+      _refreshAllData();
+    });
     isAndroidPermissionGranted();
     requestPermissions();
     configureDidReceiveLocalNotificationSubject();
@@ -53,6 +65,28 @@ class _ApplicationPagesContainerState extends State<ApplicationPagesContainer> {
             widget.notificationAppLaunchDetails!.notificationResponse);
       }
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.dataSyncService.syncIfNeeded();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _syncCompletedSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _refreshAllData() {
+    if (!mounted) return;
+    context.read<SubscriptionCubit>().refreshSubscription();
+    context.read<FutureSubscriptionPaymentCubit>().load();
+    context.read<CustomerCubit>().loadCustomerDetails();
+    context.read<BouquetCubit>().load();
   }
 
   Future<void> requestPermissions() async {

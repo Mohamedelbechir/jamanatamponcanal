@@ -8,6 +8,7 @@ import 'package:jamanacanal/daos/future_subscription_payment_dao.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/future_subscription_payment_detail.dart';
 import 'package:jamanacanal/models/future_subscription_payment_input_data.dart';
+import 'package:jamanacanal/sync/data_sync_service.dart';
 
 part 'future_subscription_payment_state.dart';
 
@@ -17,12 +18,14 @@ class FutureSubscriptionPaymentCubit
   final CustomersDao _customersDao;
   final BouquetsDao _bouquetsDao;
   final NotificationCubit _notificationCubit;
+  final DataSyncService _dataSyncService;
 
   FutureSubscriptionPaymentCubit(
     this._futureSubscriptionPaymentsDao,
     this._notificationCubit,
     this._customersDao,
     this._bouquetsDao,
+    this._dataSyncService,
   ) : super(FutureSubscriptionInitial());
 
   Future<void> load() async {
@@ -35,6 +38,7 @@ class FutureSubscriptionPaymentCubit
     await _futureSubscriptionPaymentsDao.removeSubscription(subscriptionId);
 
     load();
+    await _dataSyncService.onLocalDataChanged();
   }
 
   Future<void> addSubscription(
@@ -55,6 +59,7 @@ class FutureSubscriptionPaymentCubit
         "Ajouter avec succès !",
       );
       load();
+      await _dataSyncService.onLocalDataChanged();
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,

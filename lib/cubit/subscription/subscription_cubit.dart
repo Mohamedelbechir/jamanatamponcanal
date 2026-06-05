@@ -12,6 +12,7 @@ import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/subscription_detail.dart';
 import 'package:jamanacanal/notification/notification.dart';
 import 'package:jamanacanal/utils/functions.dart';
+import 'package:jamanacanal/sync/data_sync_service.dart';
 
 import '../../models/subscription_input_data.dart';
 
@@ -24,6 +25,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   final CustomersDao _customersDao;
   final SubscriptionFilterCubit _subscriptionFilterCubit;
   final NotificationCubit _notificationCubit;
+  final DataSyncService _dataSyncService;
   StreamSubscription<SubscriptionFilterState>? _filterSubscription;
   SubscriptionCubit(
     this._subscriptionsDao,
@@ -32,6 +34,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     this._customersDao,
     this._notificationCubit,
     this._subscriptionFilterCubit,
+    this._dataSyncService,
   ) : super(SubscriptionInitial()) {
     _listenFilterChange(_subscriptionFilterCubit.state);
     _filterSubscription =
@@ -62,6 +65,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     });
 
     refreshSubscription();
+    await _dataSyncService.onLocalDataChanged();
   }
 
   Future<void> _loadNoPaidSubscriptions(int? customerId) async {
@@ -142,6 +146,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
 
       await loadSubscriptions();
       loadAddingForm();
+      await _dataSyncService.onLocalDataChanged();
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -179,6 +184,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
 
       await refreshSubscription();
       loadEditingForm(subscriptionInputData.subcriptionId!);
+      await _dataSyncService.onLocalDataChanged();
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,

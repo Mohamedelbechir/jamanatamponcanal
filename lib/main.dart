@@ -23,6 +23,9 @@ import 'package:jamanacanal/pages/application_pages_container.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:jamanacanal/notification/notification.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:jamanacanal/sync/data_backup_repository.dart';
+import 'package:jamanacanal/sync/data_sync_service.dart';
+import 'package:jamanacanal/sync/sync_state_store.dart';
 import 'package:jamanacanal/pages/licence/licence_page.dart';
 
 Future<void> main() async {
@@ -55,15 +58,30 @@ class Application extends StatefulWidget {
 }
 
 class _ApplicationState extends State<Application> {
+  final _licenceManager =
+      LicenceManager(firebaseFirestore: FirebaseFirestore.instance);
+  late final DataSyncService _dataSyncService;
+  late final SyncStateStore _syncStateStore;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncStateStore = SyncStateStore();
+    _dataSyncService = DataSyncService(
+      backupRepository: DataBackupRepository(database: widget.appDatabase),
+      licenceManager: _licenceManager,
+      syncStateStore: _syncStateStore,
+    );
+  }
+
   @override
   void dispose() {
+    _dataSyncService.dispose();
     didReceiveLocalNotificationStream.close();
     selectNotificationStream.close();
     super.dispose();
   }
 
-  final _licenceManager =
-      LicenceManager(firebaseFirestore: FirebaseFirestore.instance);
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -96,12 +114,14 @@ class _ApplicationState extends State<Application> {
               context.read(),
               context.read(),
               context.read(),
+              _dataSyncService,
             ),
           ),
           BlocProvider(
             create: (context) => BouquetCubit(
               context.read(),
               context.read(),
+              _dataSyncService,
             ),
           ),
           BlocProvider(
@@ -111,6 +131,7 @@ class _ApplicationState extends State<Application> {
               context.read(),
               context.read(),
               context.read(),
+              _dataSyncService,
             ),
           ),
           BlocProvider(
@@ -119,6 +140,7 @@ class _ApplicationState extends State<Application> {
               context.read(),
               context.read(),
               context.read(),
+              _dataSyncService,
             ),
           ),
           BlocProvider(
@@ -140,6 +162,7 @@ class _ApplicationState extends State<Application> {
               return ApplicationPagesContainer(
                 notificationAppLaunchDetails:
                     widget.notificationAppLaunchDetails,
+                dataSyncService: _dataSyncService,
               );
             }
             if (state is NoLicence) {
@@ -172,7 +195,10 @@ class _ApplicationState extends State<Application> {
         ),
         RepositoryProvider<FutureSubscriptionPaymentsDao>(
           create: (_) => FutureSubscriptionPaymentsDao(widget.appDatabase),
-        )
+        ),
+        RepositoryProvider<DataSyncService>(
+          create: (_) => _dataSyncService,
+        ),
       ],
       child: child!,
     );
