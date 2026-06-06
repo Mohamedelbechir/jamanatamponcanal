@@ -53,14 +53,17 @@ class LicenceManager {
     return prefs.getString(appLicenceKeyValue);
   }
 
-  /// One backup document per licence key in Firestore `backups/{licenceKey}`.
+  /// Firestore path: `backups/{backupDocumentId}` (+ subcollections per entity).
   Future<String?> getBackupDocumentId() async {
     final key = await getLicenceKey();
     if (key == null || key.isEmpty) return null;
     return backupDocumentIdFor(key);
   }
 
+  /// Stable Firestore document id for a licence key.
   static String backupDocumentIdFor(String licenceKey) {
-    return licenceKey.trim().replaceAll('/', '_');
+    final normalized = licenceKey.trim();
+    if (normalized.isEmpty) return normalized;
+    return normalized.replaceAll('/', '_');
   }
 }

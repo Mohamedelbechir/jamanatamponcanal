@@ -9,6 +9,7 @@ import 'package:jamanacanal/models/customer_detail.dart';
 import 'package:jamanacanal/daos/customer_dao.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/sync/data_sync_service.dart';
+import 'package:jamanacanal/sync/sync_entity.dart';
 
 import 'customer_input_data.dart';
 
@@ -88,7 +89,18 @@ class CustomerCubit extends Cubit<CustomerState> {
       emit(CustomerFormTraitementEnded());
       await loadCustomerDetails();
       loadForm();
-      await _dataSyncService.onLocalDataChanged();
+      final decoders = await _decodersDao.findByCustomer(customerId);
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(SyncCollection.customers, customerId),
+          ...decoders.map(
+            (decoder) => SyncMutation.upsert(
+              SyncCollection.decoders,
+              decoder.id,
+            ),
+          ),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -134,7 +146,23 @@ class CustomerCubit extends Cubit<CustomerState> {
 
       await loadCustomerDetails();
       loadEditingForm(customerInputData.id!);
-      await _dataSyncService.onLocalDataChanged();
+      final decoders =
+          await _decodersDao.findByCustomer(customerInputData.id!);
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(SyncCollection.customers, customerInputData.id!),
+          ...decoders.map(
+            (decoder) => SyncMutation.upsert(
+              SyncCollection.decoders,
+              decoder.id,
+            ),
+          ),
+          ...decodersToRemove.map(
+            (decoder) =>
+                SyncMutation.delete(SyncCollection.decoders, decoder.id),
+          ),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -196,6 +224,6 @@ class CustomerCubit extends Cubit<CustomerState> {
     loadCustomerDetails();
     _subscriptionCubit.refreshSubscription();
     _bouquetCubit.load();
-    await _dataSyncService.onLocalDataChanged();
+    await _dataSyncService.onLocalDataChanged(forceFullSync: true);
   }
 }

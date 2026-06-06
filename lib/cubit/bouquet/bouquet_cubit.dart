@@ -8,6 +8,7 @@ import 'package:jamanacanal/models/bouquet_detail.dart';
 import 'package:jamanacanal/models/bouquet_input_data.dart';
 import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/sync/data_sync_service.dart';
+import 'package:jamanacanal/sync/sync_entity.dart';
 
 part './bouquet_state.dart';
 
@@ -46,7 +47,7 @@ class BouquetCubit extends Cubit<BouquetState> {
     try {
       emit(BouquetFormUnderTraitement());
 
-      await _bouquetsDao
+      final bouquetId = await _bouquetsDao
           .addBouquet(BouquetsCompanion(name: Value(bouquetName)));
       _notificationCubit.push(
         NotificationType.success,
@@ -57,7 +58,11 @@ class BouquetCubit extends Cubit<BouquetState> {
 
       await load();
       loadAddForm();
-      await _dataSyncService.onLocalDataChanged();
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(SyncCollection.bouquets, bouquetId),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -84,7 +89,11 @@ class BouquetCubit extends Cubit<BouquetState> {
       emit(BouquetFormTraitementEnded());
       await load();
       loadForEditing(bouquetInputData.id!);
-      await _dataSyncService.onLocalDataChanged();
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(SyncCollection.bouquets, bouquetInputData.id!),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -103,6 +112,8 @@ class BouquetCubit extends Cubit<BouquetState> {
     final bouquet = await _bouquetsDao.findById(bouquetId);
     await _bouquetsDao.updateBouquet(bouquet.copyWith(obsolete: isDeprecated));
     load();
-    await _dataSyncService.onLocalDataChanged();
+    await _dataSyncService.onLocalDataChanged(
+      mutations: [SyncMutation.upsert(SyncCollection.bouquets, bouquetId)],
+    );
   }
 }

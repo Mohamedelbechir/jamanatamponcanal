@@ -9,6 +9,7 @@ import 'package:jamanacanal/models/database.dart';
 import 'package:jamanacanal/models/future_subscription_payment_detail.dart';
 import 'package:jamanacanal/models/future_subscription_payment_input_data.dart';
 import 'package:jamanacanal/sync/data_sync_service.dart';
+import 'package:jamanacanal/sync/sync_entity.dart';
 
 part 'future_subscription_payment_state.dart';
 
@@ -38,7 +39,14 @@ class FutureSubscriptionPaymentCubit
     await _futureSubscriptionPaymentsDao.removeSubscription(subscriptionId);
 
     load();
-    await _dataSyncService.onLocalDataChanged();
+    await _dataSyncService.onLocalDataChanged(
+      mutations: [
+        SyncMutation.delete(
+          SyncCollection.futureSubscriptionPayments,
+          subscriptionId,
+        ),
+      ],
+    );
   }
 
   Future<void> addSubscription(
@@ -47,7 +55,7 @@ class FutureSubscriptionPaymentCubit
     try {
       emit(FutureSubscriptionPaymentFormUnderTraintement());
 
-      await _futureSubscriptionPaymentsDao
+      final paymentId = await _futureSubscriptionPaymentsDao
           .addSubscription(FutureSubscriptionPaymentsCompanion(
         customerId: Value(formInputData.customerId),
         bouquetId: Value(formInputData.bouquetId),
@@ -59,7 +67,14 @@ class FutureSubscriptionPaymentCubit
         "Ajouter avec succès !",
       );
       load();
-      await _dataSyncService.onLocalDataChanged();
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(
+            SyncCollection.futureSubscriptionPayments,
+            paymentId,
+          ),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,

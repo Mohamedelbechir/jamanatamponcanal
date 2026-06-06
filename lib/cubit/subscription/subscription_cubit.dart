@@ -13,6 +13,7 @@ import 'package:jamanacanal/models/subscription_detail.dart';
 import 'package:jamanacanal/notification/notification.dart';
 import 'package:jamanacanal/utils/functions.dart';
 import 'package:jamanacanal/sync/data_sync_service.dart';
+import 'package:jamanacanal/sync/sync_entity.dart';
 
 import '../../models/subscription_input_data.dart';
 
@@ -65,7 +66,11 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     });
 
     refreshSubscription();
-    await _dataSyncService.onLocalDataChanged();
+    await _dataSyncService.onLocalDataChanged(
+      mutations: [
+        SyncMutation.delete(SyncCollection.subscriptions, subscriptionId),
+      ],
+    );
   }
 
   Future<void> _loadNoPaidSubscriptions(int? customerId) async {
@@ -134,7 +139,8 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     try {
       emit(SubscriptionFormUnderTraitement());
 
-      await _subscriptionsDao.addSubscription(subscriptionInputData.companion);
+      final subscriptionId = await _subscriptionsDao
+          .addSubscription(subscriptionInputData.companion);
       await Future.delayed(const Duration(milliseconds: 500));
 
       emit(SubscriptionFormTraitementEnded());
@@ -146,7 +152,11 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
 
       await loadSubscriptions();
       loadAddingForm();
-      await _dataSyncService.onLocalDataChanged();
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(SyncCollection.subscriptions, subscriptionId),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,
@@ -184,7 +194,14 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
 
       await refreshSubscription();
       loadEditingForm(subscriptionInputData.subcriptionId!);
-      await _dataSyncService.onLocalDataChanged();
+      await _dataSyncService.onLocalDataChanged(
+        mutations: [
+          SyncMutation.upsert(
+            SyncCollection.subscriptions,
+            subscriptionInputData.subcriptionId!,
+          ),
+        ],
+      );
     } catch (e) {
       _notificationCubit.push(
         NotificationType.error,

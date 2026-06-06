@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:jamanacanal/log/connectivity_checker.dart';
 import 'package:jamanacanal/models/licence_manager.dart';
 import 'package:jamanacanal/sync/data_backup_repository.dart';
+import 'package:jamanacanal/sync/sync_entity.dart';
 import 'package:jamanacanal/sync/sync_state_store.dart';
 
 class DataSyncService {
@@ -31,7 +32,10 @@ class DataSyncService {
   final Connectivity _connectivity;
 
   static const _backupCollection = 'backups';
-  static const _schemaVersion = 3;
+  static const _schemaVersion = 4;
+  static const _syncFormat = 'subcollections';
+  static const _batchWriteLimit = 450;
+  static const _pullPageSize = 500;
 
   bool _syncInProgress = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -53,8 +57,14 @@ class DataSyncService {
     _connectivitySubscription = null;
   }
 
-  Future<void> onLocalDataChanged() async {
-    await _syncStateStore.markPending();
+  Future<void> onLocalDataChanged({
+    List<SyncMutation>? mutations,
+    bool forceFullSync = false,
+  }) async {
+    await _syncStateStore.markPending(
+      mutations: mutations,
+      forceFullSync: forceFullSync,
+    );
     await syncIfNeeded();
   }
 
@@ -66,12 +76,18 @@ class DataSyncService {
     if (licenceKey == null || licenceKey.isEmpty) return;
 
     final backupDocumentId = LicenceManager.backupDocumentIdFor(licenceKey);
+    final licenceChanged =
+        await _syncStateStore.activateLicenceScope(licenceKey);
 
     if (!await _hasConnection()) return;
 
     _syncInProgress = true;
     try {
-      final pulled = await _performSync(backupDocumentId, licenceKey);
+      final pulled = await _performSync(
+        backupDocumentId,
+        licenceKey,
+        licenceChanged: licenceChanged,
+      );
       if (pulled) {
         _syncCompletedController.add(null);
       }
@@ -86,48 +102,308 @@ class DataSyncService {
     }
   }
 
-  Future<bool> _performSync(String backupDocumentId, String licenceKey) async {
+  Future<bool> _performSync(
+    String backupDocumentId,
+    String licenceKey, {
+    required bool licenceChanged,
+  }) async {
     final backupRef =
         _firestore.collection(_backupCollection).doc(backupDocumentId);
     final remoteSnapshot = await backupRef.get();
+    final remoteData = remoteSnapshot.data();
+
+    if (licenceChanged) {
+      return _initializeBackupForLicence(
+        backupRef,
+        licenceKey,
+        remoteSnapshot.exists,
+        remoteData,
+      );
+    }
+
+    if (!_belongsToLicence(remoteData, licenceKey)) {
+      debugPrint(
+        'Remote backup does not belong to licence $licenceKey, skipping import.',
+      );
+      return false;
+    }
+
+    if (_isLegacySnapshot(remoteData)) {
+      await _backupRepository.importSnapshot(remoteData!);
+      final remoteUpdatedAt = _readRemoteUpdatedAt(remoteData);
+      if (remoteUpdatedAt != null) {
+        await _syncStateStore.markSynced(remoteUpdatedAt);
+      }
+      await _uploadChanges(backupRef, licenceKey, forceFull: true);
+      return true;
+    }
 
     final lastSyncedAt = await _syncStateStore.getLastSyncedAt();
-    final remoteUpdatedAt = _readRemoteUpdatedAt(remoteSnapshot.data());
+    final remoteUpdatedAt = _readRemoteUpdatedAt(remoteData);
     final hasLocalChanges = await _hasPendingLocalChanges();
 
     if (hasLocalChanges || !remoteSnapshot.exists) {
-      await _uploadSnapshot(backupRef, licenceKey);
+      await _uploadChanges(backupRef, licenceKey);
       return false;
     }
 
     if (remoteSnapshot.exists &&
         remoteUpdatedAt != null &&
         (lastSyncedAt == null || remoteUpdatedAt.isAfter(lastSyncedAt))) {
-      await _backupRepository.importSnapshot(remoteSnapshot.data()!);
-      await _syncStateStore.markSynced(remoteUpdatedAt);
-      return true;
+      final pulled = await _pullRemoteChanges(
+        backupRef,
+        lastSyncedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+      );
+      if (pulled) {
+        await _syncStateStore.markSynced(remoteUpdatedAt);
+        return true;
+      }
     }
 
     return false;
   }
 
-  Future<void> _uploadSnapshot(
+  Future<bool> _initializeBackupForLicence(
     DocumentReference<Map<String, dynamic>> backupRef,
     String licenceKey,
+    bool remoteExists,
+    Map<String, dynamic>? remoteData,
   ) async {
+    if (remoteExists &&
+        remoteData != null &&
+        _belongsToLicence(remoteData, licenceKey)) {
+      if (_isLegacySnapshot(remoteData)) {
+        await _backupRepository.importSnapshot(remoteData);
+        final remoteUpdatedAt = _readRemoteUpdatedAt(remoteData);
+        if (remoteUpdatedAt != null) {
+          await _syncStateStore.markSynced(remoteUpdatedAt);
+        }
+        await _uploadChanges(backupRef, licenceKey, forceFull: true);
+        return true;
+      }
+
+      await _backupRepository.clearAllData();
+      final pulled = await _pullRemoteChanges(
+        backupRef,
+        DateTime.fromMillisecondsSinceEpoch(0),
+      );
+      final remoteUpdatedAt =
+          _readRemoteUpdatedAt(remoteData) ?? DateTime.now();
+      await _syncStateStore.markSynced(remoteUpdatedAt);
+      return pulled;
+    }
+
+    await _backupRepository.clearAllData();
+    await _syncStateStore.markSynced(DateTime.now());
+    return true;
+  }
+
+  bool _belongsToLicence(Map<String, dynamic>? data, String licenceKey) {
+    if (data == null) return true;
+    final remoteLicenceKey = data['licenceKey'] as String?;
+    if (remoteLicenceKey == null || remoteLicenceKey.isEmpty) return true;
+    return LicenceManager.backupDocumentIdFor(remoteLicenceKey) ==
+        LicenceManager.backupDocumentIdFor(licenceKey);
+  }
+
+  Future<void> _uploadChanges(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    String licenceKey, {
+    bool forceFull = false,
+  }) async {
     final now = DateTime.now();
-    final snapshot = await _backupRepository.exportSnapshot();
+    final fullSync = forceFull || await _syncStateStore.isFullSyncRequired();
+    final mutations = await _syncStateStore.getDirtyMutations();
+
+    if (fullSync || mutations.isEmpty) {
+      await _uploadFullBackup(backupRef, now);
+    } else {
+      await _uploadMutations(backupRef, mutations, now);
+    }
+
     await backupRef.set({
-      ...snapshot,
       'licenceKey': licenceKey,
       'schemaVersion': _schemaVersion,
+      'syncFormat': _syncFormat,
       'updatedAt': Timestamp.fromDate(now),
     });
     await _syncStateStore.markSynced(now);
   }
 
+  Future<void> _uploadFullBackup(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    DateTime now,
+  ) async {
+    final entities = await _backupRepository.exportAllEntities();
+    for (final collection in SyncCollection.values) {
+      await _writeEntitiesBatched(
+        backupRef,
+        collection,
+        entities[collection] ?? const [],
+        now,
+      );
+    }
+  }
+
+  Future<void> _uploadMutations(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    List<SyncMutation> mutations,
+    DateTime now,
+  ) async {
+    var batch = _firestore.batch();
+    var operationCount = 0;
+
+    Future<void> commitBatch({required bool force}) async {
+      if (operationCount == 0) return;
+      if (!force && operationCount < _batchWriteLimit) return;
+      await batch.commit();
+      batch = _firestore.batch();
+      operationCount = 0;
+    }
+
+    for (final mutation in mutations) {
+      final collectionName = syncCollectionName(mutation.collection);
+      final docRef =
+          backupRef.collection(collectionName).doc(mutation.entityId.toString());
+
+      if (mutation.deleted) {
+        batch.set(
+          docRef,
+          {
+            'id': mutation.entityId,
+            'deleted': true,
+            'updatedAt': Timestamp.fromDate(now),
+          },
+        );
+      } else {
+        final entity = await _backupRepository.exportEntity(
+          mutation.collection,
+          mutation.entityId,
+        );
+        if (entity == null) continue;
+
+        batch.set(
+          docRef,
+          {
+            ...entity,
+            'deleted': false,
+            'updatedAt': Timestamp.fromDate(now),
+          },
+        );
+      }
+
+      operationCount++;
+      if (operationCount >= _batchWriteLimit) {
+        await commitBatch(force: true);
+      }
+    }
+
+    await commitBatch(force: true);
+  }
+
+  Future<void> _writeEntitiesBatched(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    SyncCollection collection,
+    List<Map<String, dynamic>> entities,
+    DateTime now,
+  ) async {
+    if (entities.isEmpty) return;
+
+    var batch = _firestore.batch();
+    var operationCount = 0;
+    final collectionName = syncCollectionName(collection);
+
+    Future<void> commitBatch({required bool force}) async {
+      if (operationCount == 0) return;
+      if (!force && operationCount < _batchWriteLimit) return;
+      await batch.commit();
+      batch = _firestore.batch();
+      operationCount = 0;
+    }
+
+    for (final entity in entities) {
+      final entityId = entity['id'];
+      if (entityId == null) continue;
+
+      batch.set(
+        backupRef.collection(collectionName).doc(entityId.toString()),
+        {
+          ...entity,
+          'deleted': false,
+          'updatedAt': Timestamp.fromDate(now),
+        },
+      );
+      operationCount++;
+      if (operationCount >= _batchWriteLimit) {
+        await commitBatch(force: true);
+      }
+    }
+
+    await commitBatch(force: true);
+  }
+
+  Future<bool> _pullRemoteChanges(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    DateTime since,
+  ) async {
+    var pulled = false;
+    final sinceTimestamp = Timestamp.fromDate(since);
+
+    for (final collection in SyncCollection.values) {
+      final collectionPulled = await _pullCollectionChanges(
+        backupRef,
+        collection,
+        sinceTimestamp,
+      );
+      pulled = pulled || collectionPulled;
+    }
+
+    return pulled;
+  }
+
+  Future<bool> _pullCollectionChanges(
+    DocumentReference<Map<String, dynamic>> backupRef,
+    SyncCollection collection,
+    Timestamp sinceTimestamp,
+  ) async {
+    var pulled = false;
+    final collectionRef =
+        backupRef.collection(syncCollectionName(collection));
+    Query<Map<String, dynamic>> query = collectionRef
+        .where('updatedAt', isGreaterThan: sinceTimestamp)
+        .orderBy('updatedAt')
+        .limit(_pullPageSize);
+
+    while (true) {
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) break;
+
+      for (final doc in snapshot.docs) {
+        await _backupRepository.applyRemoteEntity(collection, doc.data());
+      }
+      pulled = true;
+
+      if (snapshot.docs.length < _pullPageSize) break;
+      query = collectionRef
+          .where('updatedAt', isGreaterThan: sinceTimestamp)
+          .orderBy('updatedAt')
+          .startAfterDocument(snapshot.docs.last)
+          .limit(_pullPageSize);
+    }
+
+    return pulled;
+  }
+
+  bool _isLegacySnapshot(Map<String, dynamic>? data) {
+    if (data == null) return false;
+    if (data['syncFormat'] == _syncFormat) return false;
+    return data['customers'] is List;
+  }
+
   Future<bool> _hasPendingLocalChanges() async {
     if (await _syncStateStore.isPending()) return true;
+    if (await _syncStateStore.isFullSyncRequired()) return true;
+    if ((await _syncStateStore.getDirtyMutations()).isNotEmpty) return true;
 
     final localUpdatedAt = await _syncStateStore.getLocalUpdatedAt();
     final lastSyncedAt = await _syncStateStore.getLastSyncedAt();
@@ -150,7 +426,6 @@ class DataSyncService {
       return false;
     }
 
-    // connectivity_plus can report wifi/mobile while offline; probe if possible.
     return _connectivityChecker.asConnection();
   }
 

@@ -1,12 +1,28 @@
 import 'package:drift/drift.dart';
 import 'package:jamanacanal/models/database.dart';
+import 'package:jamanacanal/sync/sync_entity.dart';
 
 class DataBackupRepository {
   DataBackupRepository({required AppDatabase database}) : _database = database;
 
   final AppDatabase _database;
 
-  Future<Map<String, dynamic>> exportSnapshot() async {
+  Future<void> clearAllData() async {
+    await _database.customStatement('PRAGMA foreign_keys = OFF');
+    try {
+      await _database.transaction(() async {
+        await _database.delete(_database.futureSubscriptionPayments).go();
+        await _database.delete(_database.subscriptions).go();
+        await _database.delete(_database.decoders).go();
+        await _database.delete(_database.bouquets).go();
+        await _database.delete(_database.customers).go();
+      });
+    } finally {
+      await _database.customStatement('PRAGMA foreign_keys = ON');
+    }
+  }
+
+  Future<Map<SyncCollection, List<Map<String, dynamic>>>> exportAllEntities() async {
     final customers = await _database.select(_database.customers).get();
     final decoders = await _database.select(_database.decoders).get();
     final bouquets = await _database.select(_database.bouquets).get();
@@ -15,13 +31,113 @@ class DataBackupRepository {
         await _database.select(_database.futureSubscriptionPayments).get();
 
     return {
-      'customers': customers.map(_customerToMap).toList(),
-      'decoders': decoders.map(_decoderToMap).toList(),
-      'bouquets': bouquets.map(_bouquetToMap).toList(),
-      'subscriptions': subscriptions.map(_subscriptionToMap).toList(),
-      'futureSubscriptionPayments':
+      SyncCollection.customers: customers.map(_customerToMap).toList(),
+      SyncCollection.decoders: decoders.map(_decoderToMap).toList(),
+      SyncCollection.bouquets: bouquets.map(_bouquetToMap).toList(),
+      SyncCollection.subscriptions:
+          subscriptions.map(_subscriptionToMap).toList(),
+      SyncCollection.futureSubscriptionPayments:
           futurePayments.map(_futurePaymentToMap).toList(),
     };
+  }
+
+  Future<Map<String, dynamic>?> exportEntity(
+    SyncCollection collection,
+    int entityId,
+  ) async {
+    switch (collection) {
+      case SyncCollection.customers:
+        final row = await (_database.select(_database.customers)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .getSingleOrNull();
+        return row == null ? null : _customerToMap(row);
+      case SyncCollection.decoders:
+        final row = await (_database.select(_database.decoders)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .getSingleOrNull();
+        return row == null ? null : _decoderToMap(row);
+      case SyncCollection.bouquets:
+        final row = await (_database.select(_database.bouquets)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .getSingleOrNull();
+        return row == null ? null : _bouquetToMap(row);
+      case SyncCollection.subscriptions:
+        final row = await (_database.select(_database.subscriptions)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .getSingleOrNull();
+        return row == null ? null : _subscriptionToMap(row);
+      case SyncCollection.futureSubscriptionPayments:
+        final row = await (_database.select(_database.futureSubscriptionPayments)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .getSingleOrNull();
+        return row == null ? null : _futurePaymentToMap(row);
+    }
+  }
+
+  Future<void> applyRemoteEntity(
+    SyncCollection collection,
+    Map<String, dynamic> data,
+  ) async {
+    if (data['deleted'] == true) {
+      await _deleteEntity(collection, _readInt(data, 'id'));
+      return;
+    }
+
+    switch (collection) {
+      case SyncCollection.customers:
+        await _database.into(_database.customers).insertOnConflictUpdate(
+              CustomersCompanion(
+                id: Value(_readInt(data, 'id')),
+                firstName: Value(_readString(data, 'firstName')),
+                lastName: Value(_readString(data, 'lastName')),
+                phoneNumber: Value(_readNullableString(data, 'phoneNumber')),
+                numberCustomer:
+                    Value(_readNullableString(data, 'numberCustomer')),
+              ),
+            );
+      case SyncCollection.bouquets:
+        await _database.into(_database.bouquets).insertOnConflictUpdate(
+              BouquetsCompanion(
+                id: Value(_readInt(data, 'id')),
+                name: Value(_readString(data, 'name')),
+                obsolete: Value(_readBool(data, 'obsolete')),
+                createAt: Value(_readNullableDateTime(data, 'createAt')),
+                updateAt: Value(_readNullableDateTime(data, 'updateAt')),
+              ),
+            );
+      case SyncCollection.decoders:
+        await _database.into(_database.decoders).insertOnConflictUpdate(
+              DecodersCompanion(
+                id: Value(_readInt(data, 'id')),
+                number: Value(_readString(data, 'number')),
+                customerId: Value(_readInt(data, 'customerId')),
+              ),
+            );
+      case SyncCollection.subscriptions:
+        await _database.into(_database.subscriptions).insertOnConflictUpdate(
+              SubscriptionsCompanion(
+                id: Value(_readInt(data, 'id')),
+                startDate: Value(_readDateTime(data, 'startDate')),
+                endDate: Value(_readDateTime(data, 'endDate')),
+                paid: Value(_readBool(data, 'paid')),
+                bouquetId: Value(_readInt(data, 'bouquetId')),
+                decoderId: Value(_readInt(data, 'decoderId')),
+              ),
+            );
+      case SyncCollection.futureSubscriptionPayments:
+        await _database
+            .into(_database.futureSubscriptionPayments)
+            .insertOnConflictUpdate(
+              FutureSubscriptionPaymentsCompanion(
+                id: Value(_readInt(data, 'id')),
+                closed: Value(_readBool(data, 'closed')),
+                bouquetId: Value(_readNullableInt(data, 'bouquetId')),
+                customerId: Value(_readInt(data, 'customerId')),
+              ),
+            );
+    }
+
+    await _resetAutoIncrement(_sqliteTableName(collection));
   }
 
   Future<void> importSnapshot(Map<String, dynamic> data) async {
@@ -87,14 +203,52 @@ class DataBackupRepository {
               );
         }
 
-        await _resetAutoIncrement('customers');
-        await _resetAutoIncrement('decoders');
-        await _resetAutoIncrement('bouquets');
-        await _resetAutoIncrement('subscriptions');
-        await _resetAutoIncrement('future_subscription_payments');
+        for (final tableName in const [
+          'customers',
+          'decoders',
+          'bouquets',
+          'subscriptions',
+          'future_subscription_payments',
+        ]) {
+          await _resetAutoIncrement(tableName);
+        }
       });
     } finally {
       await _database.customStatement('PRAGMA foreign_keys = ON');
+    }
+  }
+
+  Future<void> _deleteEntity(SyncCollection collection, int entityId) async {
+    switch (collection) {
+      case SyncCollection.customers:
+        await (_database.delete(_database.customers)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .go();
+      case SyncCollection.decoders:
+        await (_database.delete(_database.decoders)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .go();
+      case SyncCollection.bouquets:
+        await (_database.delete(_database.bouquets)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .go();
+      case SyncCollection.subscriptions:
+        await (_database.delete(_database.subscriptions)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .go();
+      case SyncCollection.futureSubscriptionPayments:
+        await (_database.delete(_database.futureSubscriptionPayments)
+              ..where((tbl) => tbl.id.equals(entityId)))
+            .go();
+    }
+  }
+
+  String _sqliteTableName(SyncCollection collection) {
+    switch (collection) {
+      case SyncCollection.futureSubscriptionPayments:
+        return 'future_subscription_payments';
+      default:
+        return syncCollectionName(collection);
     }
   }
 
